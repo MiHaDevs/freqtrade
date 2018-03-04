@@ -2,15 +2,16 @@ import logging
 from typing import Any, Callable
 
 from tabulate import tabulate
-from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update
+from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import NetworkError, TelegramError
-from telegram.ext import CommandHandler, Updater
+from telegram.ext import CommandHandler, Updater, CallbackQueryHandler
 
 from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_trade_status,
                                     rpc_daily_profit,
                                     rpc_trade_statistics,
                                     rpc_balance,
+                                    rpc_config,
                                     rpc_start,
                                     rpc_stop,
                                     rpc_forcesell,
@@ -57,11 +58,13 @@ def init(config: dict) -> None:
         CommandHandler('performance', _performance),
         CommandHandler('daily', _daily),
         CommandHandler('count', _count),
+        CommandHandler('config', _config),
         CommandHandler('help', _help),
         CommandHandler('version', _version),
     ]
     for handle in handles:
         _UPDATER.dispatcher.add_handler(handle)
+    _UPDATER.dispatcher.add_handler(CallbackQueryHandler(_callback))
     _UPDATER.start_polling(
         clean=True,
         bootstrap_retries=-1,
@@ -139,6 +142,36 @@ def _status(bot: Bot, update: Update) -> None:
         for trademsg in trades:
             send_msg(trademsg, bot=bot)
 
+@authorized_only
+def _config(bot: Bot, update: Update) -> None:
+    """
+    Handler for /config
+    """
+    button_list = [
+        InlineKeyboardButton("View config", callback_data= "view_config"),
+        InlineKeyboardButton("Edit config", callback_data= "edit_config"),
+    ]
+    reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=2))
+    chat_id = int(_CONF['telegram']['chat_id'])
+    bot.send_message(chat_id=chat_id, text = "Okay, What do you want to do with config?", reply_markup=reply_markup)
+
+def _callback(bot, update):
+    query = update.callback_query
+    callback_data = format(query.data)
+    
+    if callback_data == 'view_config': 
+        (error, df_pairs) = rpc_config(_CONF)
+        if error:
+            send_msg(df_pairs, bot=bot)
+        else:      
+            message = tabulate(df_pairs, headers='keys', tablefmt='simple')
+            message = "∙ <b>Max Open Trades:</b> {}\n∙ <b>Stake Amount:</b> {}\n∙ <b>Whitelisted Pairs:</b>\n<pre>{}</pre>".format(_CONF['max_open_trades'],_CONF['stake_amount'],message)
+            send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
+    elif callback_data == 'edit_config': 
+        bot.edit_message_text(text="Selected option: {}".format(callback_data),
+            chat_id=query.message.chat_id,
+            message_id=query.message.message_id)
+    
 
 @authorized_only
 def _status_table(bot: Bot, update: Update) -> None:
@@ -395,6 +428,16 @@ def _version(bot: Bot, update: Update) -> None:
     """
     send_msg('*Version:* `{}`'.format(__version__), bot=bot)
 
+def build_menu(buttons,
+               n_cols,
+               header_buttons=None,
+               footer_buttons=None):
+    menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
+    if header_buttons:
+        menu.insert(0, header_buttons)
+    if footer_buttons:
+        menu.append(footer_buttons)
+    return menu
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
     """
@@ -409,9 +452,9 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     bot = bot or _UPDATER.bot
 
-    keyboard = [['/daily', '/profit', '/balance'],
+    keyboard = [['/daily', '/profit', '/balance', '/config'],
                 ['/status', '/status table', '/performance'],
-                ['/count', '/start', '/stop', '/help']]
+                ['/count','/start', '/stop', '/help']]
 
     reply_markup = ReplyKeyboardMarkup(keyboard)
 

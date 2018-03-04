@@ -148,6 +148,28 @@ def rpc_status_table():
         # result, or raise error
         return (False, df_statuses)
 
+def rpc_config(config: dict):
+    if get_state() != State.RUNNING:
+        return (True, '*Status:* `trader is not running`')
+    elif not config['exchange']['pair_whitelist']:
+        return (True, '*Status:* `no pairs whitelisted`')
+    else:
+        pairs = config['exchange']['pair_whitelist'];
+        pairs_list = []
+        for pair in pairs:
+            # Traverse through pairs
+            pairs_list.append([
+                pair
+            ])
+
+        columns = ['Currency']
+        df_pairs = DataFrame.from_records(pairs_list, columns=columns)        
+        # The style used throughout is to return a tuple
+        # consisting of (error_occured?, result)
+        # Another approach would be to just return the
+        # result, or raise error
+        return (False, df_pairs)
+
 
 def rpc_daily_profit(timescale, stake_currency, fiat_display_currency):
     today = datetime.utcnow().date()
