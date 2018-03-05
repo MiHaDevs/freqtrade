@@ -12,6 +12,7 @@ from freqtrade.misc import State, get_state, update_state
 from freqtrade import exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from . import telegram
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -155,19 +156,16 @@ def rpc_config(config: dict):
         return (True, '*Status:* `no pairs whitelisted`')
     else:
         pairs = config['exchange']['pair_whitelist'];
-        pairs_list = []
+        max_col = 3;
+        max_row = math.ceil(len(pairs)/max_col);
+        pairs_list = [["" for x in range(max_col)] for y in range(max_row)]        
+        index=0;
         for pair in pairs:
-            # Traverse through pairs
-            pairs_list.append([
-                pair
-            ])
-
-        columns = ['Currency']
-        df_pairs = DataFrame.from_records(pairs_list, columns=columns)        
-        # The style used throughout is to return a tuple
-        # consisting of (error_occured?, result)
-        # Another approach would be to just return the
-        # result, or raise error
+            row = int(index/max_col)
+            col = index%max_col
+            index += 1
+            pairs_list[row][col] = pair.split("_",1)[1]
+        df_pairs = DataFrame.from_records(pairs_list)        
         return (False, df_pairs)
 
 

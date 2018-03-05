@@ -164,15 +164,25 @@ def _callback(bot, update):
         if error:
             send_msg(df_pairs, bot=bot)
         else:      
-            message = tabulate(df_pairs, headers='keys', tablefmt='simple')
-            message = "∙ <b>Max Open Trades:</b> {}\n∙ <b>Stake Amount:</b> {}\n∙ <b>Whitelisted Pairs:</b>\n<pre>{}</pre>".format(_CONF['max_open_trades'],_CONF['stake_amount'],message)
-            send_msg(message, bot=bot, parse_mode=ParseMode.HTML)
-    elif callback_data == 'edit_config': 
-        bot.edit_message_text(text="Selected option: {}".format(callback_data),
+            message = tabulate(df_pairs, tablefmt='grid', showindex=False, stralign="center")
+            message = "∙ <b>Max Open Trades:</b> {}\n∙ <b>Stake Amount:</b> {} {}\n∙ <b>Whitelisted Pairs:</b>\n<pre>{}</pre>".format(_CONF['max_open_trades'],_CONF['stake_amount'], format(_CONF['stake_currency']),message)
+            bot.edit_message_text(text=message,
             chat_id=query.message.chat_id,
-            message_id=query.message.message_id)
+            message_id=query.message.message_id, 
+            parse_mode=ParseMode.HTML)
+    elif callback_data == 'edit_config': 
+        button_list = [
+            InlineKeyboardButton("Edit Max Open Trades", callback_data= "edit_max_open_trades"),
+            InlineKeyboardButton("Edit Stake Amount", callback_data= "edit_stake_amount"),
+            InlineKeyboardButton("Edit Pairs", callback_data= "edit_pairs"),
+        ]
+        reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
+        chat_id = int(_CONF['telegram']['chat_id'])
+        bot.edit_message_text(text="Select your action",
+            chat_id=query.message.chat_id,
+            message_id=query.message.message_id, 
+            reply_markup=reply_markup)
     
-
 @authorized_only
 def _status_table(bot: Bot, update: Update) -> None:
     """
