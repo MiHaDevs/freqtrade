@@ -4,7 +4,7 @@ from typing import Any, Callable
 from tabulate import tabulate
 from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import NetworkError, TelegramError
-from telegram.ext import CommandHandler, Updater, CallbackQueryHandler
+from telegram.ext import CommandHandler, Updater, CallbackQueryHandler, MessageHandler, Filters, ConversationHandler
 
 from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_trade_status,
@@ -12,6 +12,7 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_trade_statistics,
                                     rpc_balance,
                                     rpc_config,
+                                    rpc_update_config,
                                     rpc_start,
                                     rpc_stop,
                                     rpc_forcesell,
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 _UPDATER: Updater = None
 _CONF = {}
-
+MAX_OPEN_TRADES = range(1)
 
 def init(config: dict) -> None:
     """
@@ -64,7 +65,13 @@ def init(config: dict) -> None:
     ]
     for handle in handles:
         _UPDATER.dispatcher.add_handler(handle)
+
+    # Register Callback Query Handler for Inline keyboard markup
     _UPDATER.dispatcher.add_handler(CallbackQueryHandler(_callback))
+
+     # Add conversation handler with the states
+    _UPDATER.dispatcher.add_handler(MessageHandler(Filters.text, _max_open_trades))
+
     _UPDATER.start_polling(
         clean=True,
         bootstrap_retries=-1,
@@ -147,42 +154,64 @@ def _config(bot: Bot, update: Update) -> None:
     """
     Handler for /config
     """
-    button_list = [
+    _send_inline_keyboard_markup(bot, [
         InlineKeyboardButton("View config", callback_data= "view_config"),
         InlineKeyboardButton("Edit config", callback_data= "edit_config"),
-    ]
-    reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=2))
+    ], "Okay, What do you want to do with config?", 2)
+
+def _send_inline_keyboard_markup(bot: Bot, button_list = [], message_text = None, n_cols = 1, edit_message_query = None):
+    """
+    Create an inline keyboard markup to prompt user with different options
+    """
+    reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=n_cols))
     chat_id = int(_CONF['telegram']['chat_id'])
-    bot.send_message(chat_id=chat_id, text = "Okay, What do you want to do with config?", reply_markup=reply_markup)
+    if edit_message_query is None:
+        bot.send_message(chat_id=chat_id, text = message_text, reply_markup=reply_markup)
+    else:
+        bot.edit_message_text(text=message_text,
+            chat_id=edit_message_query.message.chat_id,
+            message_id=edit_message_query.message.message_id, 
+            reply_markup=reply_markup)
 
 def _callback(bot, update):
+    """
+    Handle callbacks for inline keyboard button taps/clicks
+    """
     query = update.callback_query
     callback_data = format(query.data)
     
-    if callback_data == 'view_config': 
+    if callback_data == 'view_config':
+        # Collect editable config data and send it across in tabular format 
         (error, df_pairs) = rpc_config(_CONF)
         if error:
             send_msg(df_pairs, bot=bot)
         else:      
             message = tabulate(df_pairs, tablefmt='grid', showindex=False, stralign="center")
-            message = "∙ <b>Max Open Trades:</b> {}\n∙ <b>Stake Amount:</b> {} {}\n∙ <b>Whitelisted Pairs:</b>\n<pre>{}</pre>".format(_CONF['max_open_trades'],_CONF['stake_amount'], format(_CONF['stake_currency']),message)
+            message = "∙ <b>Max Open Trades:</b> {}\n∙ <b>Stake Amount:</b> {} {}\n∙ <b>Whitelisted Currencies:</b>\n<pre>{}</pre>".format(_CONF['max_open_trades'],_CONF['stake_amount'], format(_CONF['stake_currency']),message)
             bot.edit_message_text(text=message,
             chat_id=query.message.chat_id,
             message_id=query.message.message_id, 
             parse_mode=ParseMode.HTML)
     elif callback_data == 'edit_config': 
-        button_list = [
+        # Prompt user to pick specific field to edit
+         _send_inline_keyboard_markup(bot, [
             InlineKeyboardButton("Edit Max Open Trades", callback_data= "edit_max_open_trades"),
             InlineKeyboardButton("Edit Stake Amount", callback_data= "edit_stake_amount"),
             InlineKeyboardButton("Edit Pairs", callback_data= "edit_pairs"),
-        ]
-        reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
-        chat_id = int(_CONF['telegram']['chat_id'])
-        bot.edit_message_text(text="Select your action",
+        ], "Select your action", 1, query)
+    elif callback_data == 'edit_max_open_trades':
+        bot.send_message(
             chat_id=query.message.chat_id,
-            message_id=query.message.message_id, 
-            reply_markup=reply_markup)
-    
+            text="Okay, give me new value for max open trades\n\nCurrent value for max open trades is <b>{}</b>".format(_CONF['max_open_trades']),
+            parse_mode=ParseMode.HTML)
+        return MAX_OPEN_TRADES
+
+def _max_open_trades(bot: Bot, update: Update):
+    new_max_open_trades = int(update.message.text)
+    _CONF['max_open_trades'] = new_max_open_trades
+    rpc_update_config(_CONF)
+    bot.send_message(chat_id=update.message.chat_id, text="Success! Please wait while I am saving these changes to config file...")
+
 @authorized_only
 def _status_table(bot: Bot, update: Update) -> None:
     """

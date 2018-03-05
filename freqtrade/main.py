@@ -430,6 +430,8 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     Trade.session.flush()
     return True
 
+def update_config():
+    update_state(State.UPDATING)
 
 def init(config: dict, db_url: Optional[str] = None) -> None:
     """
@@ -469,7 +471,6 @@ def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]
     )
 
     return [s['MarketName'].replace('-', '_') for s in summaries]
-
 
 def cleanup() -> None:
     """
@@ -550,6 +551,9 @@ def main(sysargv=sys.argv[1:]) -> int:
                     nb_assets=args.dynamic_whitelist,
                     interval=int(_CONF.get('ticker_interval', 5))
                 )
+            elif new_state == State.UPDATING:
+                _CONF = load_config(args.config)
+                update_state(State.RUNNING)
             old_state = new_state
     except KeyboardInterrupt:
         logger.info('SIGINT received, aborting ...')

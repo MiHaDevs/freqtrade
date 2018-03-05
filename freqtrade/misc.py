@@ -21,11 +21,12 @@ logger = logging.getLogger(__name__)
 class State(enum.Enum):
     RUNNING = 0
     STOPPED = 1
+    UPDATING = 2
 
 
 # Current application state
 _STATE = State.STOPPED
-
+_CONFIG_PATH = None
 
 ############################################
 # Used by scripts                          #
@@ -85,12 +86,14 @@ def get_state() -> State:
     return _STATE
 
 
-def load_config(path: str) -> Dict:
+def load_config(path: Any) -> Dict:
     """
     Loads a config file from the given path
     :param path: path as str
     :return: configuration as dictionary
     """
+    global _CONFIG_PATH
+    _CONFIG_PATH = path;
     with open(path) as file:
         conf = json.load(file)
     if 'internals' not in conf:
@@ -104,6 +107,12 @@ def load_config(path: str) -> Dict:
         raise ValidationError(
             best_match(Draft4Validator(CONF_SCHEMA).iter_errors(conf)).message
         )
+
+def update_config(config:dict):
+    with open(_CONFIG_PATH, 'w') as file:
+        json.dump(config, file, indent=4)
+        from main import update_config
+        update_config()
 
 
 def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:

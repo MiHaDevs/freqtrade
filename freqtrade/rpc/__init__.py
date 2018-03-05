@@ -168,6 +168,9 @@ def rpc_config(config: dict):
         df_pairs = DataFrame.from_records(pairs_list)        
         return (False, df_pairs)
 
+def rpc_update_config(config:dict):
+    from freqtrade.misc import update_config
+    update_config(config)
 
 def rpc_daily_profit(timescale, stake_currency, fiat_display_currency):
     today = datetime.utcnow().date()
