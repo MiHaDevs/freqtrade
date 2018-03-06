@@ -23,7 +23,7 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_count
                                     )
 
-from freqtrade import __version__
+from freqtrade import __version__, exchange, OperationalException
 from freqtrade.misc import get_list_type, ListType
 
 # Remove noisy log messages
@@ -266,7 +266,13 @@ def _message_handler(bot: Bot, update: Update):
             _process_config_update()
             _UPDATED_COINS.clear()
         else:
-            _UPDATED_COINS.append(user_text.upper())
+            coin = user_text.upper()
+            try:
+                exchange.validate_pairs(["{}_{}".format(_CONF['stake_currency'],coin)])
+            except OperationalException as e:
+                _send_coins_for_deletion(bot, "✖ Failure! {}\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n".format(e))
+                return
+            _UPDATED_COINS.append(coin)
             _send_coins_for_deletion(bot, "✔ Added coin.\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n")
 
 def _process_config_update():
