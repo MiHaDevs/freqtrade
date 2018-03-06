@@ -109,11 +109,9 @@ def load_config(path: Any) -> Dict:
         )
 
 def update_config(config:dict):
-    with open(_CONFIG_PATH, 'w') as file:
+    update_state(State.UPDATING)  
+    with open(_CONFIG_PATH, 'w') as file:      
         json.dump(config, file, indent=4)
-        from main import update_config
-        update_config()
-
 
 def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
     """

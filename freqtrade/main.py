@@ -430,9 +430,6 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     Trade.session.flush()
     return True
 
-def update_config():
-    update_state(State.UPDATING)
-
 def init(config: dict, db_url: Optional[str] = None) -> None:
     """
     Initializes all modules and updates the config

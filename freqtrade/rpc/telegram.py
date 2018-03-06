@@ -1,4 +1,5 @@
 import logging
+import copy
 from typing import Any, Callable
 
 from tabulate import tabulate
@@ -32,12 +33,13 @@ logger = logging.getLogger(__name__)
 _UPDATER: Updater = None
 _CONF = {}
 MESSAGE_HANDLER = range(1)
-
+_UPDATED_COINS = []
 
 class Conversation(Enum):
     IDLE = 0
-    MAX_OPEN_TRADES = 2
-    STAKE_AMOUNT = 3
+    MAX_OPEN_TRADES = 1
+    STAKE_AMOUNT = 2
+    UPDATE_COINS = 3
 
 _CONVERSATION = Conversation.IDLE
 
@@ -188,7 +190,7 @@ def _callback(bot, update):
     """
     query = update.callback_query
     callback_data = format(query.data)
-    global _CONVERSATION
+    global _CONVERSATION, _UPDATED_COINS
     if callback_data == 'view_config':
         # Collect editable config data and send it across in tabular format 
         (error, df_pairs) = rpc_config(_CONF)
@@ -203,7 +205,7 @@ def _callback(bot, update):
             parse_mode=ParseMode.HTML)
     elif callback_data == 'edit_config': 
         # Prompt user to pick specific field to edit
-         _send_inline_keyboard_markup(bot, [
+        _send_inline_keyboard_markup(bot, [
             InlineKeyboardButton("Edit Max Open Trades", callback_data= "edit_max_open_trades"),
             InlineKeyboardButton("Edit Stake Amount", callback_data= "edit_stake_amount"),
             InlineKeyboardButton("Edit Pairs", callback_data= "edit_pairs"),
@@ -216,6 +218,25 @@ def _callback(bot, update):
         send_msg("Okay, give me new value for stake amount.\nCurrent value for stake amount is <b>{}</b>.".format(_CONF['stake_amount']), parse_mode=ParseMode.HTML)
         _CONVERSATION = Conversation.STAKE_AMOUNT
         return MESSAGE_HANDLER
+    elif callback_data == 'edit_pairs':
+        # Prompt user to choose whether to delete or add new coins
+        for pair in _CONF['exchange']['pair_whitelist']:
+            coin = pair.split("_",1)[1]
+            _UPDATED_COINS.append(coin)
+        _send_coins_for_deletion(bot, "∙ Send coin to add to the list.\n∙ Tap on coin to remove from the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n", query)
+    elif "x_" in callback_data:
+        coin = callback_data.split("_",1)[1]
+        logger.info("Callback : {} and coin : {}".format(callback_data,coin))
+        _UPDATED_COINS.remove(coin)
+        _send_coins_for_deletion(bot, "✔ Removed coin.\n\n∙ Send coin to add to the list.\n∙ Tap on coin to remove from the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n", query)
+
+def _send_coins_for_deletion(bot:Bot,message:str,query = None):
+    global _CONVERSATION
+    _CONVERSATION = Conversation.UPDATE_COINS
+    buttons_list = []
+    for coin in _UPDATED_COINS:
+        buttons_list.append(InlineKeyboardButton(coin, callback_data= "x_{}".format(coin)))
+    _send_inline_keyboard_markup(bot, buttons_list, message, 3, query)
 
 def _message_handler(bot: Bot, update: Update):
     global _CONVERSATION
@@ -223,15 +244,30 @@ def _message_handler(bot: Bot, update: Update):
     if _CONVERSATION == Conversation.MAX_OPEN_TRADES:
         new_max_open_trades = int(update.message.text)
         _CONF['max_open_trades'] = new_max_open_trades
-        rpc_update_config(_CONF)
-        bot.send_message(chat_id=update.message.chat_id, text="Success! Please wait while I am saving these changes to config file...")
-        _CONVERSATION = Conversation.IDLE
+        _process_config_update()
     elif _CONVERSATION == Conversation.STAKE_AMOUNT:
         new_stake_amount = float(update.message.text)
         _CONF['stake_amount'] = new_stake_amount
-        rpc_update_config(_CONF)
-        bot.send_message(chat_id=update.message.chat_id, text="Success! Please wait while I am saving these changes to config file...")
-        _CONVERSATION = Conversation.IDLE
+        _process_config_update()
+    elif _CONVERSATION == Conversation.UPDATE_COINS:
+        user_text = update.message.text
+        stake_currency = _CONF['stake_currency']
+        if user_text.upper() == 'DONE':
+            new_list = []
+            for coin in _UPDATED_COINS:
+                new_list.append("{}_{}".format(stake_currency,coin))
+            _CONF['exchange']['pair_whitelist'] = new_list
+            _process_config_update()
+            _UPDATED_COINS.clear()
+        else:
+            _UPDATED_COINS.append(user_text.upper())
+            _send_coins_for_deletion(bot, "✔ Added coin.\n\n∙ Send coin to add to the list.\n∙ Tap on coin to remove from the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n")
+
+def _process_config_update():
+    global _CONVERSATION
+    rpc_update_config(_CONF)
+    send_msg("Success! Please wait while I am saving these changes to config file...")
+    _CONVERSATION = Conversation.IDLE
 
 @authorized_only
 def _status_table(bot: Bot, update: Update) -> None:
