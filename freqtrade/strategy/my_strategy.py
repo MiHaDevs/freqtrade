@@ -207,11 +207,7 @@ class DefaultStrategy(IStrategy):
         """
         dataframe.loc[
             (
-                (dataframe['rsi'] < 30) &
-                (dataframe['fastd'] < 25) &
-                (dataframe['adx'] > 35) &
-                (dataframe['plus_di'] > 0.5) &
-                (dataframe['bb_lowerband'] > dataframe['close'])
+                (dataframe['fastd'] > 10)
             ) ,
             'buy'] = 1
 

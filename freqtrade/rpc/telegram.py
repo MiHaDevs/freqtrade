@@ -6,6 +6,8 @@ from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update, InlineKeyboard
 from telegram.error import NetworkError, TelegramError
 from telegram.ext import CommandHandler, Updater, CallbackQueryHandler, MessageHandler, Filters, ConversationHandler
 
+from enum import Enum
+
 from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_trade_status,
                                     rpc_daily_profit,
@@ -22,7 +24,6 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
 
 from freqtrade import __version__
 
-
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
 logging.getLogger('telegram').setLevel(logging.INFO)
@@ -30,7 +31,15 @@ logger = logging.getLogger(__name__)
 
 _UPDATER: Updater = None
 _CONF = {}
-MAX_OPEN_TRADES = range(1)
+MESSAGE_HANDLER = range(1)
+
+
+class Conversation(Enum):
+    IDLE = 0
+    MAX_OPEN_TRADES = 2
+    STAKE_AMOUNT = 3
+
+_CONVERSATION = Conversation.IDLE
 
 def init(config: dict) -> None:
     """
@@ -61,7 +70,7 @@ def init(config: dict) -> None:
         CommandHandler('count', _count),
         CommandHandler('config', _config),
         CommandHandler('help', _help),
-        CommandHandler('version', _version),
+        CommandHandler('version', _version)
     ]
     for handle in handles:
         _UPDATER.dispatcher.add_handler(handle)
@@ -69,8 +78,8 @@ def init(config: dict) -> None:
     # Register Callback Query Handler for Inline keyboard markup
     _UPDATER.dispatcher.add_handler(CallbackQueryHandler(_callback))
 
-     # Add conversation handler with the states
-    _UPDATER.dispatcher.add_handler(MessageHandler(Filters.text, _max_open_trades))
+    # Register message handler
+    _UPDATER.dispatcher.add_handler(MessageHandler(Filters.text, _message_handler))
 
     _UPDATER.start_polling(
         clean=True,
@@ -179,7 +188,7 @@ def _callback(bot, update):
     """
     query = update.callback_query
     callback_data = format(query.data)
-    
+    global _CONVERSATION
     if callback_data == 'view_config':
         # Collect editable config data and send it across in tabular format 
         (error, df_pairs) = rpc_config(_CONF)
@@ -203,14 +212,34 @@ def _callback(bot, update):
         bot.send_message(
             chat_id=query.message.chat_id,
             text="Okay, give me new value for max open trades\n\nCurrent value for max open trades is <b>{}</b>".format(_CONF['max_open_trades']),
-            parse_mode=ParseMode.HTML)
-        return MAX_OPEN_TRADES
+            parse_mode=ParseMode.HTML, 
+            callback_data= "max_open_trades")
+        _CONVERSATION = Conversation.MAX_OPEN_TRADES
+        return MESSAGE_HANDLER
+    elif callback_data == 'edit_stake_amount':
+        bot.send_message(
+            chat_id=query.message.chat_id,
+            text="Okay, give me new value for stake amount\nCurrent value for stake amount is <b>{}</b>".format(_CONF['stake_amount']),
+            parse_mode=ParseMode.HTML, 
+            callback_data= "stake_amount")
+        _CONVERSATION = Conversation.STAKE_AMOUNT
+        return MESSAGE_HANDLER
 
-def _max_open_trades(bot: Bot, update: Update):
-    new_max_open_trades = int(update.message.text)
-    _CONF['max_open_trades'] = new_max_open_trades
-    rpc_update_config(_CONF)
-    bot.send_message(chat_id=update.message.chat_id, text="Success! Please wait while I am saving these changes to config file...")
+def _message_handler(bot: Bot, update: Update):
+    global _CONVERSATION
+    logger.info("Conver : {}".format(_CONVERSATION))
+    if _CONVERSATION == Conversation.MAX_OPEN_TRADES:
+        new_max_open_trades = int(update.message.text)
+        _CONF['max_open_trades'] = new_max_open_trades
+        rpc_update_config(_CONF)
+        bot.send_message(chat_id=update.message.chat_id, text="Success! Please wait while I am saving these changes to config file...")
+        _CONVERSATION = Conversation.IDLE
+    elif _CONVERSATION == Conversation.STAKE_AMOUNT:
+        new_stake_amount = float(update.message.text)
+        _CONF['stake_amount'] = new_stake_amount
+        rpc_update_config(_CONF)
+        bot.send_message(chat_id=update.message.chat_id, text="Success! Please wait while I am saving these changes to config file...")
+        _CONVERSATION = Conversation.IDLE
 
 @authorized_only
 def _status_table(bot: Bot, update: Update) -> None:
