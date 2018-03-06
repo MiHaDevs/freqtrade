@@ -19,7 +19,7 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_stop,
                                     rpc_forcesell,
                                     rpc_performance,
-                                    rpc_count,
+                                    rpc_count
                                     )
 
 from freqtrade import __version__
@@ -209,19 +209,11 @@ def _callback(bot, update):
             InlineKeyboardButton("Edit Pairs", callback_data= "edit_pairs"),
         ], "Select your action", 1, query)
     elif callback_data == 'edit_max_open_trades':
-        bot.send_message(
-            chat_id=query.message.chat_id,
-            text="Okay, give me new value for max open trades\n\nCurrent value for max open trades is <b>{}</b>".format(_CONF['max_open_trades']),
-            parse_mode=ParseMode.HTML, 
-            callback_data= "max_open_trades")
+        send_msg("Okay, give me new value for max open trades.\nCurrent value for max open trades is <b>{}</b>.".format(_CONF['max_open_trades']), parse_mode=ParseMode.HTML)
         _CONVERSATION = Conversation.MAX_OPEN_TRADES
         return MESSAGE_HANDLER
     elif callback_data == 'edit_stake_amount':
-        bot.send_message(
-            chat_id=query.message.chat_id,
-            text="Okay, give me new value for stake amount\nCurrent value for stake amount is <b>{}</b>".format(_CONF['stake_amount']),
-            parse_mode=ParseMode.HTML, 
-            callback_data= "stake_amount")
+        send_msg("Okay, give me new value for stake amount.\nCurrent value for stake amount is <b>{}</b>.".format(_CONF['stake_amount']), parse_mode=ParseMode.HTML)
         _CONVERSATION = Conversation.STAKE_AMOUNT
         return MESSAGE_HANDLER
 
