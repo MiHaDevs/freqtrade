@@ -24,6 +24,7 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     )
 
 from freqtrade import __version__
+from freqtrade.misc import get_list_type, ListType
 
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
@@ -198,7 +199,11 @@ def _callback(bot, update):
             send_msg(df_pairs, bot=bot)
         else:      
             message = tabulate(df_pairs, tablefmt='grid', showindex=False, stralign="center")
-            message = "∙ <b>Max Open Trades:</b> {}\n∙ <b>Stake Amount:</b> {} {}\n∙ <b>Whitelisted Currencies:</b>\n<pre>{}</pre>".format(_CONF['max_open_trades'],_CONF['stake_amount'], format(_CONF['stake_currency']),message)
+            message = "∙ <b>Max Open Trades:</b> {}\n∙ <b>Stake Amount:</b> {} {}\n∙ <b>{} Currencies:</b>\n<pre>{}</pre>".format(
+                _CONF['max_open_trades'],_CONF['stake_amount'], 
+                _CONF['stake_currency'], 
+                "Whitelisted" if get_list_type()==ListType.STATIC else "Blacklisted",
+                message)
             bot.edit_message_text(text=message,
             chat_id=query.message.chat_id,
             message_id=query.message.message_id, 
@@ -208,7 +213,7 @@ def _callback(bot, update):
         _send_inline_keyboard_markup(bot, [
             InlineKeyboardButton("Edit Max Open Trades", callback_data= "edit_max_open_trades"),
             InlineKeyboardButton("Edit Stake Amount", callback_data= "edit_stake_amount"),
-            InlineKeyboardButton("Edit Pairs", callback_data= "edit_pairs"),
+            InlineKeyboardButton("Edit Pair {}".format("Whitelist" if get_list_type()==ListType.STATIC else "Blacklist") , callback_data= "edit_pairs"),
         ], "Select your action", 1, query)
     elif callback_data == 'edit_max_open_trades':
         send_msg("Okay, give me new value for max open trades.\nCurrent value for max open trades is <b>{}</b>.".format(_CONF['max_open_trades']), parse_mode=ParseMode.HTML)
@@ -220,15 +225,16 @@ def _callback(bot, update):
         return MESSAGE_HANDLER
     elif callback_data == 'edit_pairs':
         # Prompt user to choose whether to delete or add new coins
-        for pair in _CONF['exchange']['pair_whitelist']:
+        list_to_scan = _CONF['exchange']['pair_whitelist'] if get_list_type()==ListType.STATIC else _CONF['exchange']['pair_blacklist']
+        for pair in list_to_scan:
             coin = pair.split("_",1)[1]
             _UPDATED_COINS.append(coin)
-        _send_coins_for_deletion(bot, "∙ Send coin to add to the list.\n∙ Tap on coin to remove from the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n", query)
+        _send_coins_for_deletion(bot, "∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n", query)
     elif "x_" in callback_data:
         coin = callback_data.split("_",1)[1]
         logger.info("Callback : {} and coin : {}".format(callback_data,coin))
         _UPDATED_COINS.remove(coin)
-        _send_coins_for_deletion(bot, "✔ Removed coin.\n\n∙ Send coin to add to the list.\n∙ Tap on coin to remove from the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n", query)
+        _send_coins_for_deletion(bot, "✔ Removed coin.\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n", query)
 
 def _send_coins_for_deletion(bot:Bot,message:str,query = None):
     global _CONVERSATION
@@ -240,7 +246,6 @@ def _send_coins_for_deletion(bot:Bot,message:str,query = None):
 
 def _message_handler(bot: Bot, update: Update):
     global _CONVERSATION
-    logger.info("Conver : {}".format(_CONVERSATION))
     if _CONVERSATION == Conversation.MAX_OPEN_TRADES:
         new_max_open_trades = int(update.message.text)
         _CONF['max_open_trades'] = new_max_open_trades
@@ -256,12 +261,13 @@ def _message_handler(bot: Bot, update: Update):
             new_list = []
             for coin in _UPDATED_COINS:
                 new_list.append("{}_{}".format(stake_currency,coin))
-            _CONF['exchange']['pair_whitelist'] = new_list
+            list_to_update = 'pair_whitelist' if get_list_type()==ListType.STATIC else 'pair_blacklist'
+            _CONF['exchange'][list_to_update] = new_list
             _process_config_update()
             _UPDATED_COINS.clear()
         else:
             _UPDATED_COINS.append(user_text.upper())
-            _send_coins_for_deletion(bot, "✔ Added coin.\n\n∙ Send coin to add to the list.\n∙ Tap on coin to remove from the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n")
+            _send_coins_for_deletion(bot, "✔ Added coin.\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n")
 
 def _process_config_update():
     global _CONVERSATION

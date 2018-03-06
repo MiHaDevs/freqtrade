@@ -8,7 +8,7 @@ import sqlalchemy as sql
 # from sqlalchemy import and_, func, text
 
 from freqtrade.persistence import Trade
-from freqtrade.misc import State, get_state, update_state
+from freqtrade.misc import State, get_state, update_state, get_list_type, ListType
 from freqtrade import exchange
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from . import telegram
@@ -150,12 +150,13 @@ def rpc_status_table():
         return (False, df_statuses)
 
 def rpc_config(config: dict):
+    list_to_update = 'pair_whitelist' if get_list_type()==ListType.STATIC else 'pair_blacklist'
     if get_state() != State.RUNNING:
         return (True, '*Status:* `trader is not running`')
-    elif not config['exchange']['pair_whitelist']:
+    elif not config['exchange'][list_to_update]:
         return (True, '*Status:* `no pairs whitelisted`')
     else:
-        pairs = config['exchange']['pair_whitelist'];
+        pairs = config['exchange'][list_to_update];
         max_col = 3;
         max_row = math.ceil(len(pairs)/max_col);
         pairs_list = [["" for x in range(max_col)] for y in range(max_row)]        

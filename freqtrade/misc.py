@@ -23,9 +23,18 @@ class State(enum.Enum):
     STOPPED = 1
     UPDATING = 2
 
+class ListType(enum.Enum):
+    STATIC = 0
+    DYNAMIC = 1
+
 
 # Current application state
 _STATE = State.STOPPED
+
+# Default List State
+_LIST_TYPE = ListType.STATIC
+
+# Path of config file
 _CONFIG_PATH = None
 
 ############################################
@@ -84,6 +93,25 @@ def get_state() -> State:
     :return:
     """
     return _STATE
+
+@synchronized
+def update_list_type(list_type: ListType) -> None:
+    """
+    Updates the application state
+    :param list_type: new list type
+    :return: None
+    """
+    global _LIST_TYPE
+    _LIST_TYPE = list_type
+
+
+@synchronized
+def get_list_type() -> ListType:
+    """
+    Gets the list type
+    :return:
+    """
+    return _LIST_TYPE
 
 
 def load_config(path: Any) -> Dict:

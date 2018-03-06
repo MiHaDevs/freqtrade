@@ -17,7 +17,7 @@ from freqtrade import (DependencyException, OperationalException, __version__,
 from freqtrade.analyze import get_signal
 from freqtrade.fiat_convert import CryptoToFiatConverter
 from freqtrade.misc import (State, get_state, load_config, parse_args,
-                            throttle, update_state)
+                            throttle, update_state, update_list_type, ListType)
 from freqtrade.persistence import Trade
 from freqtrade.strategy.strategy import Strategy
 
@@ -516,6 +516,7 @@ def main(sysargv=sys.argv[1:]) -> int:
 
     # Initialize all modules and start main loop
     if args.dynamic_whitelist:
+        update_list_type(ListType.DYNAMIC)
         logger.info('Using dynamically generated whitelist. (--dynamic-whitelist detected)')
 
     # If the user ask for Dry run with a local DB instead of memory
