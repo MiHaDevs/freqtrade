@@ -209,7 +209,8 @@ def test_exchange_bittrex_get_ticker():
 def test_exchange_bittrex_get_ticker_bad():
     wb = make_wrap_bittrex()
     fb = FakeBittrex()
-    fb.result = {'success': True, 'result': {'Bid': 1, 'Ask': 0}}  # incomplete result
+    fb.result = {'success': True, 'result': {
+        'Bid': 1, 'Ask': 0}}  # incomplete result
 
     with pytest.raises(ContentDecodingError, match=r'.*Invalid response from Bittrex params.*'):
         wb.get_ticker('BTC_ETH')
@@ -256,7 +257,8 @@ def test_exchange_bittrex_get_ticker_history():
 
     with pytest.raises(ContentDecodingError, match=r'.*Required property C not present.*'):
         fb.result = {'success': True,
-                     'result': [{'V': 0, 'O': 0, 'H': 0, 'L': 0, 'T': 0}],  # close is missing
+                     # close is missing
+                     'result': [{'V': 0, 'O': 0, 'H': 0, 'L': 0, 'T': 0}],
                      'message': 'candles lit'}
         wb.get_ticker_history('BTC_ETH', 5)
 

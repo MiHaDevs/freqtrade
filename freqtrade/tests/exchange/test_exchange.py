@@ -27,7 +27,8 @@ def maybe_init_api(conf, mocker):
 def test_init(default_conf, mocker, caplog):
     caplog.set_level(logging.INFO)
     maybe_init_api(default_conf, mocker)
-    assert log_has('Instance is running with dry_run enabled', caplog.record_tuples)
+    assert log_has('Instance is running with dry_run enabled',
+                   caplog.record_tuples)
 
 
 def test_init_exception(default_conf):
@@ -173,7 +174,8 @@ def test_get_balances_prod(default_conf, mocker):
 def test_get_ticker(default_conf, mocker):
     maybe_init_api(default_conf, mocker)
     api_mock = MagicMock()
-    tick = {"success": True, 'result': {'Bid': 0.00001098, 'Ask': 0.00001099, 'Last': 0.0001}}
+    tick = {"success": True, 'result': {
+        'Bid': 0.00001098, 'Ask': 0.00001099, 'Last': 0.0001}}
     api_mock.get_ticker = MagicMock(return_value=tick)
     mocker.patch('freqtrade.exchange.bittrex._API', api_mock)
 

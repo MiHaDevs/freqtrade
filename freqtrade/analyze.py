@@ -27,12 +27,14 @@ def parse_ticker_dataframe(ticker: list) -> DataFrame:
     :param ticker: See exchange.get_ticker_history
     :return: DataFrame
     """
-    columns = {'C': 'close', 'V': 'volume', 'O': 'open', 'H': 'high', 'L': 'low', 'T': 'date'}
+    columns = {'C': 'close', 'V': 'volume', 'O': 'open',
+               'H': 'high', 'L': 'low', 'T': 'date'}
     frame = DataFrame(ticker) \
         .rename(columns=columns)
     if 'BV' in frame:
         frame.drop('BV', 1, inplace=True)
-    frame['date'] = to_datetime(frame['date'], utc=True, infer_datetime_format=True)
+    frame['date'] = to_datetime(
+        frame['date'], utc=True, infer_datetime_format=True)
     frame.sort_values('date', inplace=True)
     return frame
 
@@ -98,10 +100,12 @@ def get_signal(pair: str, interval: int) -> (bool, bool):
     try:
         dataframe = analyze_ticker(ticker_hist)
     except ValueError as ex:
-        logger.warning('Unable to analyze ticker for pair %s: %s', pair, str(ex))
+        logger.warning(
+            'Unable to analyze ticker for pair %s: %s', pair, str(ex))
         return (False, False)  # return False ?
     except Exception as ex:
-        logger.exception('Unexpected error when analyzing ticker for pair %s: %s', pair, str(ex))
+        logger.exception(
+            'Unexpected error when analyzing ticker for pair %s: %s', pair, str(ex))
         return (False, False)  # return False ?
 
     if dataframe.empty:
@@ -117,6 +121,8 @@ def get_signal(pair: str, interval: int) -> (bool, bool):
                        pair, (arrow.utcnow() - signal_date).seconds // 60)
         return (False, False)  # return False ?
 
-    (buy, sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
-    logger.debug('trigger: %s (pair=%s) buy=%s sell=%s', latest['date'], pair, str(buy), str(sell))
+    (buy,
+     sell) = latest[SignalType.BUY.value] == 1, latest[SignalType.SELL.value] == 1
+    logger.debug('trigger: %s (pair=%s) buy=%s sell=%s',
+                 latest['date'], pair, str(buy), str(sell))
     return (buy, sell)

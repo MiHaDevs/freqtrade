@@ -242,7 +242,8 @@ def test_calc_close_trade_price(limit_buy_order, limit_sell_order):
     assert trade.calc_close_trade_price(rate=0.00001234) == 0.0011200318
 
     # Get the close rate price with a custom close rate and a custom fee rate
-    assert trade.calc_close_trade_price(rate=0.00001234, fee=0.003) == 0.0011194704
+    assert trade.calc_close_trade_price(
+        rate=0.00001234, fee=0.003) == 0.0011194704
 
     # Test when we apply a Sell order, and ask price with a custom fee rate
     trade.update(limit_sell_order)

@@ -81,7 +81,8 @@ def get_sell_trade_entry(pair, buy_row, partial_ticker, trade_count_lock, args):
     for sell_row in partial_ticker:
         if max_open_trades > 0:
             # Increase trade_count_lock for every iteration
-            trade_count_lock[sell_row.date] = trade_count_lock.get(sell_row.date, 0) + 1
+            trade_count_lock[sell_row.date] = trade_count_lock.get(
+                sell_row.date, 0) + 1
 
         buy_signal = sell_row.buy
         if should_sell(trade, sell_row.close, sell_row.date, buy_signal, sell_row.sell):
@@ -117,7 +118,8 @@ def backtest(args) -> DataFrame:
     for pair, pair_data in processed.items():
         pair_data['buy'], pair_data['sell'] = 0, 0  # cleanup from previous run
 
-        ticker_data = populate_sell_trend(populate_buy_trend(pair_data))[headers]
+        ticker_data = populate_sell_trend(
+            populate_buy_trend(pair_data))[headers]
         ticker = [x for x in ticker_data.itertuples()]
 
         lock_pair_until = None
@@ -132,9 +134,11 @@ def backtest(args) -> DataFrame:
                 # Check if max_open_trades has already been reached for the given date
                 if not trade_count_lock.get(row.date, 0) < max_open_trades:
                     continue
-                trade_count_lock[row.date] = trade_count_lock.get(row.date, 0) + 1
+                trade_count_lock[row.date] = trade_count_lock.get(
+                    row.date, 0) + 1
 
-            ret = get_sell_trade_entry(pair, row, ticker[index+1:], trade_count_lock, args)
+            ret = get_sell_trade_entry(
+                pair, row, ticker[index+1:], trade_count_lock, args)
             if ret:
                 row2, trade_entry, next_date = ret
                 lock_pair_until = next_date
@@ -188,9 +192,11 @@ def start(args):
     if args.live:
         logger.info('Downloading data for all pairs in whitelist ...')
         for pair in pairs:
-            data[pair] = exchange.get_ticker_history(pair, strategy.ticker_interval)
+            data[pair] = exchange.get_ticker_history(
+                pair, strategy.ticker_interval)
     else:
-        logger.info('Using local backtesting data (using whitelist in given config) ...')
+        logger.info(
+            'Using local backtesting data (using whitelist in given config) ...')
 
         timerange = misc.parse_timerange(args.timerange)
         data = optimize.load_data(args.datadir,
@@ -215,8 +221,10 @@ def start(args):
                 max_date.isoformat(),
                 (max_date-min_date).days)
     # Execute backtest and print results
-    sell_profit_only = config.get('experimental', {}).get('sell_profit_only', False)
-    use_sell_signal = config.get('experimental', {}).get('use_sell_signal', False)
+    sell_profit_only = config.get(
+        'experimental', {}).get('sell_profit_only', False)
+    use_sell_signal = config.get(
+        'experimental', {}).get('use_sell_signal', False)
     results = backtest({'stake_amount': config['stake_amount'],
                         'processed': preprocessed,
                         'max_open_trades': max_open_trades,

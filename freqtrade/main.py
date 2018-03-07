@@ -65,7 +65,8 @@ def process_maybe_execute_buy(interval: int) -> bool:
         if create_trade(float(_CONF['stake_amount']), interval):
             return True
 
-        logger.info('Found no buy signals for whitelisted currencies. Trying again..')
+        logger.info(
+            'Found no buy signals for whitelisted currencies. Trying again..')
         return False
     except DependencyException as exception:
         logger.warning('Unable to create trade: %s', exception)
@@ -203,7 +204,8 @@ def check_handle_timedout(timeoutvalue: int) -> None:
         try:
             order = exchange.get_order(trade.open_order_id)
         except requests.exceptions.RequestException:
-            logger.info('Cannot query order for %s due to %s', trade, traceback.format_exc())
+            logger.info('Cannot query order for %s due to %s',
+                        trade, traceback.format_exc())
             continue
         ordertime = arrow.get(order['opened'])
 
@@ -374,7 +376,8 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     # Check if stake_amount is fulfilled
     if exchange.get_balance(_CONF['stake_currency']) < stake_amount:
         raise DependencyException(
-            'stake amount is not fulfilled (currency={})'.format(_CONF['stake_currency'])
+            'stake amount is not fulfilled (currency={})'.format(
+                _CONF['stake_currency'])
         )
 
     # Remove currently opened and latest pairs from whitelist
@@ -430,6 +433,7 @@ def create_trade(stake_amount: float, interval: int) -> bool:
     Trade.session.flush()
     return True
 
+
 def init(config: dict, db_url: Optional[str] = None) -> None:
     """
     Initializes all modules and updates the config
@@ -462,12 +466,14 @@ def gen_pair_whitelist(base_currency: str, key: str = 'BaseVolume') -> List[str]
     :return: List of pairs
     """
     summaries = sorted(
-        (s for s in exchange.get_market_summaries() if s['MarketName'].startswith(base_currency)),
+        (s for s in exchange.get_market_summaries()
+         if s['MarketName'].startswith(base_currency)),
         key=lambda s: s.get(key) or 0.0,
         reverse=True
     )
 
     return [s['MarketName'].replace('-', '_') for s in summaries]
+
 
 def cleanup() -> None:
     """
@@ -480,6 +486,22 @@ def cleanup() -> None:
     persistence.cleanup()
     rpc.cleanup()
     exit(0)
+
+
+def load_config_from_path(path: str):
+    # Load and validate configuration
+    global _CONF
+    _CONF = load_config(path)
+
+
+def enable_dry_run():
+    if _CONF.get('dry_run', False):
+            _CONF.update({'dry_run_db': True})
+            logger.info(
+                'Dry_run will use the DB file: "tradesv3.dry_run.sqlite". (--dry_run_db detected)'
+            )
+    else:
+        logger.info('Dry run is disabled. (--dry_run_db ignored)')
 
 
 def main(sysargv=sys.argv[1:]) -> int:
@@ -508,8 +530,7 @@ def main(sysargv=sys.argv[1:]) -> int:
         logging.getLevelName(args.loglevel)
     )
 
-    # Load and validate configuration
-    _CONF = load_config(args.config)
+    load_config_from_path(args.config)
 
     # Add the strategy file to use
     _CONF.update({'strategy': args.strategy})
@@ -517,17 +538,12 @@ def main(sysargv=sys.argv[1:]) -> int:
     # Initialize all modules and start main loop
     if args.dynamic_whitelist:
         update_list_type(ListType.DYNAMIC)
-        logger.info('Using dynamically generated whitelist. (--dynamic-whitelist detected)')
+        logger.info(
+            'Using dynamically generated whitelist. (--dynamic-whitelist detected)')
 
     # If the user ask for Dry run with a local DB instead of memory
     if args.dry_run_db:
-        if _CONF.get('dry_run', False):
-            _CONF.update({'dry_run_db': True})
-            logger.info(
-                'Dry_run will use the DB file: "tradesv3.dry_run.sqlite". (--dry_run_db detected)'
-            )
-        else:
-            logger.info('Dry run is disabled. (--dry_run_db ignored)')
+        enable_dry_run()
 
     try:
         init(_CONF)
@@ -545,12 +561,13 @@ def main(sysargv=sys.argv[1:]) -> int:
             elif new_state == State.RUNNING:
                 throttle(
                     _process,
-                    min_secs=_CONF['internals'].get('process_throttle_secs', 10),
+                    min_secs=_CONF['internals'].get(
+                        'process_throttle_secs', 10),
                     nb_assets=args.dynamic_whitelist,
                     interval=int(_CONF.get('ticker_interval', 5))
                 )
             elif new_state == State.UPDATING:
-                _CONF = load_config(args.config)
+                load_config_from_path(args.config)
                 update_state(State.RUNNING)
             old_state = new_state
     except KeyboardInterrupt:

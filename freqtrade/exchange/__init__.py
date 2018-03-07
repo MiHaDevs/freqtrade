@@ -70,14 +70,16 @@ def validate_pairs(pairs: List[str]) -> None:
     try:
         markets = _API.get_markets()
     except requests.exceptions.RequestException as e:
-        logger.warning('Unable to validate pairs (assuming they are correct). Reason: %s', e)
+        logger.warning(
+            'Unable to validate pairs (assuming they are correct). Reason: %s', e)
         return
 
     stake_cur = _CONF['stake_currency']
     for pair in pairs:
         if not pair.startswith(stake_cur):
             raise OperationalException(
-                'Pair {} not compatible with stake_currency: {}'.format(pair, stake_cur)
+                'Pair {} not compatible with stake_currency: {}'.format(
+                    pair, stake_cur)
             )
         if pair not in markets:
             raise OperationalException(

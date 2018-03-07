@@ -136,7 +136,8 @@ def rpc_status_table():
             trades_list.append([
                 trade.id,
                 trade.pair,
-                shorten_date(arrow.get(trade.open_date).humanize(only_distance=True)),
+                shorten_date(arrow.get(trade.open_date).humanize(
+                    only_distance=True)),
                 '{:.2f}%'.format(100 * trade.calc_profit_percent(current_rate))
             ])
 
@@ -149,29 +150,28 @@ def rpc_status_table():
         # result, or raise error
         return (False, df_statuses)
 
+
 def rpc_config(config: dict):
-    list_to_update = 'pair_whitelist' if get_list_type()==ListType.STATIC else 'pair_blacklist'
+    list_to_update = 'pair_whitelist' if get_list_type(
+    ) == ListType.STATIC else 'pair_blacklist'
     if get_state() != State.RUNNING:
         return (True, '*Status:* `trader is not running`')
     elif not config['exchange'][list_to_update]:
         return (True, '*Status:* `no pairs whitelisted`')
     else:
-        pairs = config['exchange'][list_to_update];
-        max_col = 3;
-        max_row = math.ceil(len(pairs)/max_col);
-        pairs_list = [["" for x in range(max_col)] for y in range(max_row)]        
-        index=0;
+        pairs = config['exchange'][list_to_update]
+        max_col = 3
+        max_row = math.ceil(len(pairs)/max_col)
+        pairs_list = [["" for x in range(max_col)] for y in range(max_row)]
+        index = 0
         for pair in pairs:
             row = int(index/max_col)
-            col = index%max_col
+            col = index % max_col
             index += 1
-            pairs_list[row][col] = pair.split("_",1)[1]
-        df_pairs = DataFrame.from_records(pairs_list)        
+            pairs_list[row][col] = pair.split("_", 1)[1]
+        df_pairs = DataFrame.from_records(pairs_list)
         return (False, df_pairs)
 
-def rpc_update_config(config:dict):
-    from freqtrade.misc import update_config
-    update_config(config)
 
 def rpc_daily_profit(timescale, stake_currency, fiat_display_currency):
     today = datetime.utcnow().date()
@@ -210,7 +210,8 @@ def rpc_daily_profit(timescale, stake_currency, fiat_display_currency):
                 ),
                 symbol=fiat_display_currency
             ),
-            '{value} trade{s}'.format(value=value['trades'], s='' if value['trades'] < 2 else 's'),
+            '{value} trade{s}'.format(
+                value=value['trades'], s='' if value['trades'] < 2 else 's'),
         ]
         for key, value in profit_days.items()
     ]
@@ -235,7 +236,8 @@ def rpc_trade_statistics(stake_currency, fiat_display_currency) -> None:
         if not trade.open_rate:
             continue
         if trade.close_date:
-            durations.append((trade.close_date - trade.open_date).total_seconds())
+            durations.append(
+                (trade.close_date - trade.open_date).total_seconds())
 
         if not trade.is_open:
             profit_percent = trade.calc_profit_percent()
@@ -246,7 +248,8 @@ def rpc_trade_statistics(stake_currency, fiat_display_currency) -> None:
             current_rate = exchange.get_ticker(trade.pair, False)['bid']
             profit_percent = trade.calc_profit_percent(rate=current_rate)
 
-        profit_all_coin.append(trade.calc_profit(rate=Decimal(trade.close_rate or current_rate)))
+        profit_all_coin.append(trade.calc_profit(
+            rate=Decimal(trade.close_rate or current_rate)))
         profit_all_percent.append(profit_percent)
 
     best_pair = Trade.session.query(Trade.pair,
@@ -316,9 +319,11 @@ def rpc_balance(fiat_display_currency):
             currency["Rate"] = 1.0
         else:
             if coin == 'USDT':
-                currency["Rate"] = 1.0 / exchange.get_ticker('USDT_BTC', False)['bid']
+                currency["Rate"] = 1.0 / \
+                    exchange.get_ticker('USDT_BTC', False)['bid']
             else:
-                currency["Rate"] = exchange.get_ticker('BTC_' + coin, False)['bid']
+                currency["Rate"] = exchange.get_ticker(
+                    'BTC_' + coin, False)['bid']
         currency['BTC'] = currency["Rate"] * currency["Balance"]
         total = total + currency['BTC']
         output.append({'currency': currency['Currency'],
@@ -414,7 +419,8 @@ def rpc_performance() -> None:
         return (True, '`trader is not running`')
 
     pair_rates = Trade.session.query(Trade.pair,
-                                     sql.func.sum(Trade.close_profit).label('profit_sum'),
+                                     sql.func.sum(Trade.close_profit).label(
+                                         'profit_sum'),
                                      sql.func.count(Trade.pair).label('count')) \
         .filter(Trade.is_open.is_(False)) \
         .group_by(Trade.pair) \
@@ -422,7 +428,8 @@ def rpc_performance() -> None:
         .all()
     trades = []
     for (pair, rate, count) in pair_rates:
-        trades.append({'pair': pair, 'profit': round(rate * 100, 2), 'count': count})
+        trades.append({'pair': pair, 'profit': round(
+            rate * 100, 2), 'count': count})
 
     return (False, trades)
 

@@ -23,6 +23,7 @@ class State(enum.Enum):
     STOPPED = 1
     UPDATING = 2
 
+
 class ListType(enum.Enum):
     STATIC = 0
     DYNAMIC = 1
@@ -42,6 +43,7 @@ _CONFIG_PATH = None
 # Matplotlib doesn't support ::datetime64, #
 # so we need to convert it into ::datetime #
 ############################################
+
 
 def datesarray_to_datetimearray(dates):
     """
@@ -94,6 +96,7 @@ def get_state() -> State:
     """
     return _STATE
 
+
 @synchronized
 def update_list_type(list_type: ListType) -> None:
     """
@@ -121,7 +124,7 @@ def load_config(path: Any) -> Dict:
     :return: configuration as dictionary
     """
     global _CONFIG_PATH
-    _CONFIG_PATH = path;
+    _CONFIG_PATH = path
     with open(path) as file:
         conf = json.load(file)
     if 'internals' not in conf:
@@ -131,15 +134,18 @@ def load_config(path: Any) -> Dict:
         validate(conf, CONF_SCHEMA)
         return conf
     except ValidationError as exception:
-        logger.fatal('Invalid configuration. See config.json.example. Reason: %s', exception)
+        logger.fatal(
+            'Invalid configuration. See config.json.example. Reason: %s', exception)
         raise ValidationError(
             best_match(Draft4Validator(CONF_SCHEMA).iter_errors(conf)).message
         )
 
-def update_config(config:dict):
-    update_state(State.UPDATING)  
-    with open(_CONFIG_PATH, 'w') as file:      
+
+def update_config(config: dict):
+    update_state(State.UPDATING)
+    with open(_CONFIG_PATH, 'w') as file:
         json.dump(config, file, indent=4)
+
 
 def throttle(func: Callable[..., Any], min_secs: float, *args, **kwargs) -> Any:
     """
@@ -352,7 +358,8 @@ def build_subcommands(parser: argparse.ArgumentParser) -> None:
     subparsers = parser.add_subparsers(dest='subparser')
 
     # Add backtesting subcommand
-    backtesting_cmd = subparsers.add_parser('backtesting', help='backtesting module')
+    backtesting_cmd = subparsers.add_parser(
+        'backtesting', help='backtesting module')
     backtesting_cmd.set_defaults(func=backtesting.start)
     optimizer_shared_options(backtesting_cmd)
     backtesting_options(backtesting_cmd)

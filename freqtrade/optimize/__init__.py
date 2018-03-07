@@ -75,12 +75,15 @@ def load_data(datadir: str, ticker_interval: int, pairs: Optional[List[str]] = N
         download_pairs(datadir, _pairs, ticker_interval)
 
     for pair in _pairs:
-        pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
+        pairdata = load_tickerdata_file(
+            datadir, pair, ticker_interval, timerange=timerange)
         if not pairdata:
             # download the tickerdata from exchange
-            download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
+            download_backtesting_testdata(
+                datadir, pair=pair, interval=ticker_interval)
             # and retry reading the pair
-            pairdata = load_tickerdata_file(datadir, pair, ticker_interval, timerange=timerange)
+            pairdata = load_tickerdata_file(
+                datadir, pair, ticker_interval, timerange=timerange)
         result[pair] = pairdata
     return result
 
@@ -106,7 +109,8 @@ def download_pairs(datadir, pairs: List[str], ticker_interval: int) -> bool:
     """For each pairs passed in parameters, download the ticker intervals"""
     for pair in pairs:
         try:
-            download_backtesting_testdata(datadir, pair=pair, interval=ticker_interval)
+            download_backtesting_testdata(
+                datadir, pair=pair, interval=ticker_interval)
         except BaseException:
             logger.info('Failed to download the pair: "{pair}", Interval: {interval} min'.format(
                 pair=pair,

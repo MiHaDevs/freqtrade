@@ -10,14 +10,15 @@ from freqtrade import misc
 
 parser = misc.common_args_parser('download utility')
 parser.add_argument(
-        '-p', '--pair',
-        help='JSON file containing pairs to download',
-        dest='pair',
-        default=None
+    '-p', '--pair',
+    help='JSON file containing pairs to download',
+    dest='pair',
+    default=None
 )
 args = parser.parse_args(sys.argv[1:])
 
-TICKER_INTERVALS = [1, 5]  # ticker interval in minutes (currently implemented: 1 and 5)
+# ticker interval in minutes (currently implemented: 1 and 5)
+TICKER_INTERVALS = [1, 5]
 PAIRS = []
 
 if args.pair:

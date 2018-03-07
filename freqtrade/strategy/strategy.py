@@ -54,12 +54,14 @@ class Strategy(object):
         # Check if we need to override configuration
         if 'minimal_roi' in config:
             self.custom_strategy.minimal_roi = config['minimal_roi']
-            self.logger.info("Override strategy \'minimal_roi\' with value in config file.")
+            self.logger.info(
+                "Override strategy \'minimal_roi\' with value in config file.")
 
         if 'stoploss' in config:
             self.custom_strategy.stoploss = config['stoploss']
             self.logger.info(
-                "Override strategy \'stoploss\' with value in config file: %s.", config['stoploss']
+                "Override strategy \'stoploss\' with value in config file: %s.", config[
+                    'stoploss']
             )
 
         if 'ticker_interval' in config:
@@ -71,7 +73,8 @@ class Strategy(object):
 
         # Minimal ROI designed for the strategy
         self.minimal_roi = OrderedDict(sorted(
-            {int(key): value for (key, value) in self.custom_strategy.minimal_roi.items()}.items(),
+            {int(key): value for (key, value)
+             in self.custom_strategy.minimal_roi.items()}.items(),
             key=lambda tuple: tuple[0]))  # sort after converting to number
 
         # Optimal stoploss designed for the strategy
@@ -118,7 +121,8 @@ class Strategy(object):
         module = importlib.import_module(filename, __package__)
         custom_strategy = getattr(module, module.class_name)
 
-        self.logger.info("Load strategy class: %s (%s.py)", module.class_name, filename)
+        self.logger.info("Load strategy class: %s (%s.py)",
+                         module.class_name, filename)
         return custom_strategy()
 
     @staticmethod
@@ -143,7 +147,8 @@ class Strategy(object):
         :return: module path where is the strategy
         """
         pwd = os.path.dirname(os.path.realpath(__file__)) + '/'
-        user_data = os.path.join(pwd, '..', '..', 'user_data', 'strategies', filename + '.py')
+        user_data = os.path.join(
+            pwd, '..', '..', 'user_data', 'strategies', filename + '.py')
         strategy_folder = os.path.join(pwd, filename + '.py')
 
         path = None

@@ -36,13 +36,15 @@ def init(config: dict, engine: Optional[Engine] = None) -> None:
             # Otherwise dry run will store in memory
             else:
                 engine = create_engine('sqlite://',
-                                       connect_args={'check_same_thread': False},
+                                       connect_args={
+                                           'check_same_thread': False},
                                        poolclass=StaticPool,
                                        echo=False)
         else:
             engine = create_engine('sqlite:///tradesv3.sqlite')
 
-    session = scoped_session(sessionmaker(bind=engine, autoflush=True, autocommit=True))
+    session = scoped_session(sessionmaker(
+        bind=engine, autoflush=True, autocommit=True))
     Trade.session = session()
     Trade.query = session.query_property()
     _DECL_BASE.metadata.create_all(engine)

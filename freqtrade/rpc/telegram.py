@@ -1,11 +1,15 @@
 import logging
-import copy
 from typing import Any, Callable
 
 from tabulate import tabulate
-from telegram import Bot, ParseMode, ReplyKeyboardMarkup, Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import (Bot,
+                      ParseMode,
+                      ReplyKeyboardMarkup,
+                      Update,
+                      InlineKeyboardButton,
+                      InlineKeyboardMarkup)
 from telegram.error import NetworkError, TelegramError
-from telegram.ext import CommandHandler, Updater, CallbackQueryHandler, MessageHandler, Filters, ConversationHandler
+from telegram.ext import CommandHandler, Updater, CallbackQueryHandler, MessageHandler, Filters
 
 from enum import Enum
 
@@ -15,7 +19,6 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     rpc_trade_statistics,
                                     rpc_balance,
                                     rpc_config,
-                                    rpc_update_config,
                                     rpc_start,
                                     rpc_stop,
                                     rpc_forcesell,
@@ -24,7 +27,7 @@ from freqtrade.rpc.__init__ import (rpc_status_table,
                                     )
 
 from freqtrade import __version__, exchange, OperationalException
-from freqtrade.misc import get_list_type, ListType
+from freqtrade.misc import get_list_type, ListType, update_config
 
 # Remove noisy log messages
 logging.getLogger('requests.packages.urllib3').setLevel(logging.INFO)
@@ -36,13 +39,16 @@ _CONF = {}
 MESSAGE_HANDLER = range(1)
 _UPDATED_COINS = []
 
+
 class Conversation(Enum):
     IDLE = 0
     MAX_OPEN_TRADES = 1
     STAKE_AMOUNT = 2
     UPDATE_COINS = 3
 
+
 _CONVERSATION = Conversation.IDLE
+
 
 def init(config: dict) -> None:
     """
@@ -82,7 +88,8 @@ def init(config: dict) -> None:
     _UPDATER.dispatcher.add_handler(CallbackQueryHandler(_callback))
 
     # Register message handler
-    _UPDATER.dispatcher.add_handler(MessageHandler(Filters.text, _message_handler))
+    _UPDATER.dispatcher.add_handler(
+        MessageHandler(Filters.text, _message_handler))
 
     _UPDATER.start_polling(
         clean=True,
@@ -125,10 +132,12 @@ def authorized_only(command_handler: Callable[[Bot, Update], None]) -> Callable[
         # Reject unauthorized messages
         chat_id = int(_CONF['telegram']['chat_id'])
         if int(update.message.chat_id) != chat_id:
-            logger.info('Rejected unauthorized message from: %s', update.message.chat_id)
+            logger.info('Rejected unauthorized message from: %s',
+                        update.message.chat_id)
             return wrapper
 
-        logger.info('Executing handler: %s for chat_id: %s', command_handler.__name__, chat_id)
+        logger.info('Executing handler: %s for chat_id: %s',
+                    command_handler.__name__, chat_id)
         try:
             return command_handler(*args, **kwargs)
         except BaseException:
@@ -161,29 +170,37 @@ def _status(bot: Bot, update: Update) -> None:
         for trademsg in trades:
             send_msg(trademsg, bot=bot)
 
+
 @authorized_only
 def _config(bot: Bot, update: Update) -> None:
     """
     Handler for /config
     """
     _send_inline_keyboard_markup(bot, [
-        InlineKeyboardButton("View config", callback_data= "view_config"),
-        InlineKeyboardButton("Edit config", callback_data= "edit_config"),
+        InlineKeyboardButton("View config", callback_data="view_config"),
+        InlineKeyboardButton("Edit config", callback_data="edit_config"),
     ], "Okay, What do you want to do with config?", 2)
 
-def _send_inline_keyboard_markup(bot: Bot, button_list = [], message_text = None, n_cols = 1, edit_message_query = None):
+
+def _send_inline_keyboard_markup(bot: Bot,
+                                 button_list=[],
+                                 message_text=None,
+                                 n_cols=1,
+                                 edit_message_query=None):
     """
     Create an inline keyboard markup to prompt user with different options
     """
     reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=n_cols))
     chat_id = int(_CONF['telegram']['chat_id'])
     if edit_message_query is None:
-        bot.send_message(chat_id=chat_id, text = message_text, reply_markup=reply_markup)
+        bot.send_message(chat_id=chat_id, text=message_text,
+                         reply_markup=reply_markup)
     else:
         bot.edit_message_text(text=message_text,
-            chat_id=edit_message_query.message.chat_id,
-            message_id=edit_message_query.message.message_id, 
-            reply_markup=reply_markup)
+                              chat_id=edit_message_query.message.chat_id,
+                              message_id=edit_message_query.message.message_id,
+                              reply_markup=reply_markup)
+
 
 def _callback(bot, update):
     """
@@ -193,108 +210,161 @@ def _callback(bot, update):
     callback_data = format(query.data)
     global _CONVERSATION, _UPDATED_COINS
     if callback_data == 'view_config':
-        # Collect editable config data and send it across in tabular format 
+        # Collect editable config data and send it across in tabular format
         (error, df_pairs) = rpc_config(_CONF)
         if error:
             send_msg(df_pairs, bot=bot)
-        else:      
-            message = tabulate(df_pairs, tablefmt='grid', showindex=False, stralign="center")
-            message = "∙ <b>Max Open Trades:</b> {}\n∙ <b>Stake Amount:</b> {} {}\n∙ <b>{} Currencies:</b>\n<pre>{}</pre>".format(
-                _CONF['max_open_trades'],_CONF['stake_amount'], 
-                _CONF['stake_currency'], 
-                "Whitelisted" if get_list_type()==ListType.STATIC else "Blacklisted",
-                message)
+        else:
+            list_type = "Whitelisted" if get_list_type() == ListType.STATIC else "Blacklisted"
+            message = tabulate(df_pairs, tablefmt='grid',
+                               showindex=False, stralign="center")
+            message = ("∙ <b>Max Open Trades:</b> {}\n"
+                       "∙ <b>Stake Amount:</b> {} {}\n"
+                       "∙ <b>{} Currencies:</b>\n"
+                       "<pre>{}</pre>"
+                       .format(_CONF['max_open_trades'],
+                               _CONF['stake_amount'],
+                               _CONF['stake_currency'],
+                               list_type,
+                               message)
+                       )
             bot.edit_message_text(text=message,
-            chat_id=query.message.chat_id,
-            message_id=query.message.message_id, 
-            parse_mode=ParseMode.HTML)
-    elif callback_data == 'edit_config': 
+                                  chat_id=query.message.chat_id,
+                                  message_id=query.message.message_id,
+                                  parse_mode=ParseMode.HTML)
+    elif callback_data == 'edit_config':
         # Prompt user to pick specific field to edit
         _send_inline_keyboard_markup(bot, [
-            InlineKeyboardButton("Edit Max Open Trades", callback_data= "edit_max_open_trades"),
-            InlineKeyboardButton("Edit Stake Amount", callback_data= "edit_stake_amount"),
-            InlineKeyboardButton("Edit Pair {}".format("Whitelist" if get_list_type()==ListType.STATIC else "Blacklist") , callback_data= "edit_pairs"),
+            InlineKeyboardButton("Edit Max Open Trades",
+                                 callback_data="edit_max_open_trades"),
+            InlineKeyboardButton("Edit Stake Amount",
+                                 callback_data="edit_stake_amount"),
+            InlineKeyboardButton("Edit Pair {}".format("Whitelist" if get_list_type(
+            ) == ListType.STATIC else "Blacklist"), callback_data="edit_pairs"),
         ], "Select your action", 1, query)
     elif callback_data == 'edit_max_open_trades':
-        send_msg("Okay, give me new value for max open trades.\nCurrent value for max open trades is <b>{}</b>".format(_CONF['max_open_trades']), parse_mode=ParseMode.HTML)
+        send_msg("Okay, give me new value for max open trades.\n"
+                 "Current value for max open trades is <b>{}</b>"
+                 .format(_CONF['max_open_trades']), parse_mode=ParseMode.HTML)
         _CONVERSATION = Conversation.MAX_OPEN_TRADES
         return MESSAGE_HANDLER
     elif callback_data == 'edit_stake_amount':
-        send_msg("Okay, give me new value for stake amount.\nCurrent value for stake amount is <b>{}</b>".format(_CONF['stake_amount']), parse_mode=ParseMode.HTML)
+        send_msg("Okay, give me new value for stake amount.\n"
+                 "Current value for stake amount is <b>{}</b>"
+                 .format(_CONF['stake_amount']), parse_mode=ParseMode.HTML)
         _CONVERSATION = Conversation.STAKE_AMOUNT
         return MESSAGE_HANDLER
     elif callback_data == 'edit_pairs':
         # Prompt user to choose whether to delete or add new coins
-        list_to_scan = _CONF['exchange']['pair_whitelist'] if get_list_type()==ListType.STATIC else _CONF['exchange']['pair_blacklist']
+        list_to_scan = _CONF['exchange']['pair_whitelist'] if get_list_type(
+        ) == ListType.STATIC else _CONF['exchange']['pair_blacklist']
         for pair in list_to_scan:
-            coin = pair.split("_",1)[1]
+            coin = pair.split("_", 1)[1]
             _UPDATED_COINS.append(coin)
-        _send_coins_for_deletion(bot, "∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n", query)
+        _send_coins_for_deletion(
+            bot,
+            "∙ Tap on coin to remove from the list.\n"
+            "∙ Send coin to add to the list.\n"
+            "∙ Type and send 'Done' when you are finished to save your changes.\n", query
+        )
     elif "x_" in callback_data:
-        coin = callback_data.split("_",1)[1]
-        logger.info("Callback : {} and coin : {}".format(callback_data,coin))
+        coin = callback_data.split("_", 1)[1]
         if coin in _UPDATED_COINS:
             _UPDATED_COINS.remove(coin)
-            _send_coins_for_deletion(bot, "✔ Removed {} from {}.\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n".format(coin.upper(), "Whitelist" if get_list_type()==ListType.STATIC else "Blacklist"), query)
+            list_type = "Whitelist" if get_list_type() == ListType.STATIC else "Blacklist"
+            _send_coins_for_deletion(
+                bot,
+                "✔ Removed {} from {}.\n\n"
+                "∙ Tap on coin to remove from the list.\n"
+                "∙ Send coin to add to the list.\n"
+                "∙ Type and send 'Done' when you are finished to save your changes.\n"
+                .format(coin.upper(), list_type), query)
         else:
-            send_msg("{} has already been removed from the list".format(coin.upper()))
+            send_msg(
+                "{} has already been removed from the list".format(coin.upper()))
 
-def _send_coins_for_deletion(bot:Bot,message:str,query = None):
+
+def _send_coins_for_deletion(bot: Bot, message: str, query=None):
     global _CONVERSATION
     _CONVERSATION = Conversation.UPDATE_COINS
     buttons_list = []
     for coin in _UPDATED_COINS:
-        buttons_list.append(InlineKeyboardButton(coin, callback_data= "x_{}".format(coin)))
+        buttons_list.append(InlineKeyboardButton(
+            coin, callback_data="x_{}".format(coin)))
     _send_inline_keyboard_markup(bot, buttons_list, message, 3, query)
+
 
 def _message_handler(bot: Bot, update: Update):
     global _CONVERSATION
     if _CONVERSATION == Conversation.MAX_OPEN_TRADES:
-        try: 
+        try:
             new_max_open_trades = int(update.message.text)
         except ValueError:
-            send_msg("I don't understand that. Please ensure that you are entering a valid number")
+            send_msg(
+                "I don't understand that. Please ensure that you are entering a valid number.")
             return
         _CONF['max_open_trades'] = new_max_open_trades
         _process_config_update()
     elif _CONVERSATION == Conversation.STAKE_AMOUNT:
-        try: 
+        try:
             new_stake_amount = float(update.message.text)
         except ValueError:
-            send_msg("I don't understand that. Please ensure that you are entering a valid amount")
+            send_msg(
+                "I don't understand that. Please ensure that you are entering a valid amount.")
             return
         _CONF['stake_amount'] = new_stake_amount
         _process_config_update()
     elif _CONVERSATION == Conversation.UPDATE_COINS:
-        user_text = update.message.text
-        stake_currency = _CONF['stake_currency']
-        if user_text.upper() == 'DONE':
-            new_list = []
-            for coin in _UPDATED_COINS:
-                new_list.append("{}_{}".format(stake_currency,coin))
-            list_to_update = 'pair_whitelist' if get_list_type()==ListType.STATIC else 'pair_blacklist'
-            _CONF['exchange'][list_to_update] = new_list
-            _process_config_update()
-            _UPDATED_COINS.clear()
-        else:
-            coin = user_text.upper()
-            list_name = "Whitelist" if get_list_type()==ListType.STATIC else "Blacklist";
-            if coin in _UPDATED_COINS:
-                send_msg("{} is already added to {}".format(coin, list_name))
-            else:
-                try:
-                    exchange.validate_pairs(["{}_{}".format(_CONF['stake_currency'],coin)])
-                except OperationalException as e:
-                    _send_coins_for_deletion(bot, "✖ Failure! {}\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n".format(e))
-                    return
-                _UPDATED_COINS.append(coin)
-                _send_coins_for_deletion(bot, "✔ Added {} to {}.\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n".format(coin.upper(),list_name))
+        _handle_coin_updation(bot, update)
+
 
 def _process_config_update():
     global _CONVERSATION
-    rpc_update_config(_CONF)
+    update_config(_CONF)
     send_msg("Success! Please wait while I am saving these changes to config file...")
     _CONVERSATION = Conversation.IDLE
+
+
+def _handle_coin_updation(bot: Bot, update: Update):
+    user_text = update.message.text
+    stake_currency = _CONF['stake_currency']
+    if user_text.upper() == 'DONE':
+        new_list = []
+        for coin in _UPDATED_COINS:
+            new_list.append("{}_{}".format(stake_currency, coin))
+        list_to_update = 'pair_blacklist'
+        if get_list_type() == ListType.STATIC:
+            list_to_update = 'pair_whitelist'
+        _CONF['exchange'][list_to_update] = new_list
+        _process_config_update()
+        _UPDATED_COINS.clear()
+    else:
+        coin = user_text.upper()
+        list_name = "Whitelist" if get_list_type() == ListType.STATIC else "Blacklist"
+        if coin in _UPDATED_COINS:
+            send_msg("{} is already added to {}".format(coin, list_name))
+        else:
+            try:
+                exchange.validate_pairs(
+                    ["{}_{}".format(_CONF['stake_currency'], coin)])
+            except OperationalException as e:
+                _send_coins_for_deletion(
+                    bot,
+                    "✖ Failure! {}\n\n"
+                    "∙ Tap on coin to remove from the list.\n"
+                    "∙ Send coin to add to the list.\n"
+                    "∙ Type and send 'Done' when you are finished to save your changes.\n"
+                    .format(e))
+                return
+            _UPDATED_COINS.append(coin)
+            _send_coins_for_deletion(
+                bot,
+                "✔ Added {} to {}.\n\n"
+                "∙ Tap on coin to remove from the list.\n"
+                "∙ Send coin to add to the list.\n"
+                "∙ Type and send 'Done' when you are finished to save your changes.\n"
+                .format(coin.upper(), list_name))
+
 
 @authorized_only
 def _status_table(bot: Bot, update: Update) -> None:
@@ -551,6 +621,7 @@ def _version(bot: Bot, update: Update) -> None:
     """
     send_msg('*Version:* `{}`'.format(__version__), bot=bot)
 
+
 def build_menu(buttons,
                n_cols,
                header_buttons=None,
@@ -561,6 +632,7 @@ def build_menu(buttons,
     if footer_buttons:
         menu.append(footer_buttons)
     return menu
+
 
 def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDOWN) -> None:
     """
@@ -577,7 +649,7 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
 
     keyboard = [['/daily', '/profit', '/balance', '/config'],
                 ['/status', '/status table', '/performance'],
-                ['/count','/start', '/stop', '/help']]
+                ['/count', '/start', '/stop', '/help']]
 
     reply_markup = ReplyKeyboardMarkup(keyboard)
 
@@ -599,4 +671,5 @@ def send_msg(msg: str, bot: Bot = None, parse_mode: ParseMode = ParseMode.MARKDO
                 parse_mode=parse_mode, reply_markup=reply_markup
             )
     except TelegramError as telegram_err:
-        logger.warning('TelegramError: %s! Giving up on that message.', telegram_err.message)
+        logger.warning(
+            'TelegramError: %s! Giving up on that message.', telegram_err.message)

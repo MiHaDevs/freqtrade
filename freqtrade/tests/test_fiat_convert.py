@@ -51,14 +51,16 @@ def test_fiat_convert_add_pair():
     pair_len = len(fiat_convert._pairs)
     assert pair_len == 0
 
-    fiat_convert._add_pair(crypto_symbol='btc', fiat_symbol='usd', price=12345.0)
+    fiat_convert._add_pair(crypto_symbol='btc',
+                           fiat_symbol='usd', price=12345.0)
     pair_len = len(fiat_convert._pairs)
     assert pair_len == 1
     assert fiat_convert._pairs[0].crypto_symbol == 'BTC'
     assert fiat_convert._pairs[0].fiat_symbol == 'USD'
     assert fiat_convert._pairs[0].price == 12345.0
 
-    fiat_convert._add_pair(crypto_symbol='btc', fiat_symbol='Eur', price=13000.2)
+    fiat_convert._add_pair(crypto_symbol='btc',
+                           fiat_symbol='Eur', price=13000.2)
     pair_len = len(fiat_convert._pairs)
     assert pair_len == 2
     assert fiat_convert._pairs[1].crypto_symbol == 'BTC'
@@ -77,12 +79,17 @@ def test_fiat_convert_find_price(mocker):
     with pytest.raises(ValueError, match=r'The fiat ABC is not supported.'):
         fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='ABC')
 
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=12345.0)
-    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 12345.0
-    assert fiat_convert.get_price(crypto_symbol='btc', fiat_symbol='usd') == 12345.0
+    mocker.patch(
+        'freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=12345.0)
+    assert fiat_convert.get_price(
+        crypto_symbol='BTC', fiat_symbol='USD') == 12345.0
+    assert fiat_convert.get_price(
+        crypto_symbol='btc', fiat_symbol='usd') == 12345.0
 
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=13000.2)
-    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='EUR') == 13000.2
+    mocker.patch(
+        'freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=13000.2)
+    assert fiat_convert.get_price(
+        crypto_symbol='BTC', fiat_symbol='EUR') == 13000.2
 
 
 def test_fiat_convert_get_price(mocker):
@@ -91,7 +98,8 @@ def test_fiat_convert_get_price(mocker):
         'price_eur': 15000.0
     })
     mocker.patch('freqtrade.fiat_convert.Pymarketcap.ticker', api_mock)
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=28000.0)
+    mocker.patch(
+        'freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=28000.0)
 
     fiat_convert = CryptoToFiatConverter()
 
@@ -101,7 +109,8 @@ def test_fiat_convert_get_price(mocker):
     # Check the value return by the method
     pair_len = len(fiat_convert._pairs)
     assert pair_len == 0
-    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
+    assert fiat_convert.get_price(
+        crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
     assert fiat_convert._pairs[0].crypto_symbol == 'BTC'
     assert fiat_convert._pairs[0].fiat_symbol == 'USD'
     assert fiat_convert._pairs[0].price == 28000.0
@@ -111,13 +120,15 @@ def test_fiat_convert_get_price(mocker):
     # Verify the cached is used
     fiat_convert._pairs[0].price = 9867.543
     expiration = fiat_convert._pairs[0]._expiration
-    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 9867.543
+    assert fiat_convert.get_price(
+        crypto_symbol='BTC', fiat_symbol='USD') == 9867.543
     assert fiat_convert._pairs[0]._expiration == expiration
 
     # Verify the cache expiration
     expiration = time.time() - 2 * 60 * 60
     fiat_convert._pairs[0]._expiration = expiration
-    assert fiat_convert.get_price(crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
+    assert fiat_convert.get_price(
+        crypto_symbol='BTC', fiat_symbol='USD') == 28000.0
     assert fiat_convert._pairs[0]._expiration is not expiration
 
 
@@ -127,4 +138,5 @@ def test_fiat_convert_without_network():
 
     fiat_convert = CryptoToFiatConverter()
     assert fiat_convert._coinmarketcap is None
-    assert fiat_convert._find_price(crypto_symbol='BTC', fiat_symbol='USD') == 0.0
+    assert fiat_convert._find_price(
+        crypto_symbol='BTC', fiat_symbol='USD') == 0.0

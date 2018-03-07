@@ -92,7 +92,8 @@ class CryptoToFiatConverter(object):
         :param fiat_symbol: fiat to convert to
         :return: float, value in fiat of the crypto-currency amount
         """
-        price = self.get_price(crypto_symbol=crypto_symbol, fiat_symbol=fiat_symbol)
+        price = self.get_price(
+            crypto_symbol=crypto_symbol, fiat_symbol=fiat_symbol)
         return float(crypto_amount) * float(price)
 
     def get_price(self, crypto_symbol: str, fiat_symbol: str) -> float:
@@ -107,7 +108,8 @@ class CryptoToFiatConverter(object):
 
         # Check if the fiat convertion you want is supported
         if not self._is_supported_fiat(fiat=fiat_symbol):
-            raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
+            raise ValueError(
+                'The fiat {} is not supported.'.format(fiat_symbol))
 
         # Get the pair that interest us and return the price in fiat
         for pair in self._pairs:
@@ -170,7 +172,8 @@ class CryptoToFiatConverter(object):
         """
         # Check if the fiat convertion you want is supported
         if not self._is_supported_fiat(fiat=fiat_symbol):
-            raise ValueError('The fiat {} is not supported.'.format(fiat_symbol))
+            raise ValueError(
+                'The fiat {} is not supported.'.format(fiat_symbol))
         try:
             return float(
                 self._coinmarketcap.ticker(

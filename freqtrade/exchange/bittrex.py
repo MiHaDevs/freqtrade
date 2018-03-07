@@ -95,7 +95,8 @@ class Bittrex(Exchange):
         data = _API.get_balances()
         if not data['success']:
             Bittrex._validate_response(data)
-            raise OperationalException('{message}'.format(message=data['message']))
+            raise OperationalException(
+                '{message}'.format(message=data['message']))
         return data['result']
 
     def get_ticker(self, pair: str, refresh: Optional[bool] = True) -> dict:

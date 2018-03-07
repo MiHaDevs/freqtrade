@@ -58,21 +58,24 @@ def test_cleanup_telegram_disabled(mocker):
 
 def test_send_msg_telegram_enabled(mocker):
     mocker.patch('freqtrade.rpc.REGISTERED_MODULES', ['telegram'])
-    telegram_mock = mocker.patch('freqtrade.rpc.telegram.send_msg', MagicMock())
+    telegram_mock = mocker.patch(
+        'freqtrade.rpc.telegram.send_msg', MagicMock())
     send_msg('test')
     assert telegram_mock.call_count == 1
 
 
 def test_send_msg_telegram_disabled(mocker):
     mocker.patch('freqtrade.rpc.REGISTERED_MODULES', [])
-    telegram_mock = mocker.patch('freqtrade.rpc.telegram.send_msg', MagicMock())
+    telegram_mock = mocker.patch(
+        'freqtrade.rpc.telegram.send_msg', MagicMock())
     send_msg('test')
     assert telegram_mock.call_count == 0
 
 
 def test_rpc_forcesell(default_conf, update, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    mocker.patch('freqtrade.main.get_signal',
+                 side_effect=lambda s, t: (True, False))
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -152,7 +155,8 @@ def test_rpc_forcesell(default_conf, update, ticker, mocker):
 
 def test_rpc_trade_status(default_conf, update, ticker, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    mocker.patch('freqtrade.main.get_signal',
+                 side_effect=lambda s, t: (True, False))
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -181,7 +185,8 @@ def test_rpc_trade_status(default_conf, update, ticker, mocker):
 
 def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    mocker.patch('freqtrade.main.get_signal',
+                 side_effect=lambda s, t: (True, False))
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -190,9 +195,11 @@ def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_s
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          ticker=MagicMock(
+                              return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch(
+        'freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     main.init(default_conf, create_engine('sqlite://'))
     stake_currency = default_conf['stake_currency']
     fiat_display_currency = default_conf['fiat_display_currency']
@@ -234,7 +241,8 @@ def test_rpc_daily_profit(default_conf, update, ticker, limit_buy_order, limit_s
 def test_rpc_trade_statistics(
         default_conf, update, ticker, ticker_sell_up, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    mocker.patch('freqtrade.main.get_signal',
+                 side_effect=lambda s, t: (True, False))
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -243,9 +251,11 @@ def test_rpc_trade_statistics(
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          ticker=MagicMock(
+                              return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch(
+        'freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     main.init(default_conf, create_engine('sqlite://'))
     stake_currency = default_conf['stake_currency']
     fiat_display_currency = default_conf['fiat_display_currency']
@@ -290,7 +300,8 @@ def test_rpc_trade_statistics(
 def test_rpc_trade_statistics_closed(
         default_conf, update, ticker, ticker_sell_up, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    mocker.patch('freqtrade.main.get_signal',
+                 side_effect=lambda s, t: (True, False))
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',
                           _CONF=default_conf,
@@ -299,9 +310,11 @@ def test_rpc_trade_statistics_closed(
                           validate_pairs=MagicMock(),
                           get_ticker=ticker)
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          ticker=MagicMock(
+                              return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
-    mocker.patch('freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
+    mocker.patch(
+        'freqtrade.fiat_convert.CryptoToFiatConverter._find_price', return_value=15000.0)
     main.init(default_conf, create_engine('sqlite://'))
     stake_currency = default_conf['stake_currency']
     fiat_display_currency = default_conf['fiat_display_currency']
@@ -357,7 +370,8 @@ def test_rpc_balance_handle(default_conf, update, mocker):
     mocker.patch.multiple('freqtrade.main.exchange',
                           get_balances=MagicMock(return_value=mock_balance))
     mocker.patch.multiple('freqtrade.fiat_convert.Pymarketcap',
-                          ticker=MagicMock(return_value={'price_usd': 15000.0}),
+                          ticker=MagicMock(
+                              return_value={'price_usd': 15000.0}),
                           _cache_symbols=MagicMock(return_value={'BTC': 1}))
 
     (error, res) = rpc.rpc_balance(default_conf['fiat_display_currency'])
@@ -377,7 +391,8 @@ def test_rpc_balance_handle(default_conf, update, mocker):
 def test_performance_handle(
         default_conf, update, ticker, limit_buy_order, limit_sell_order, mocker):
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
-    mocker.patch('freqtrade.main.get_signal', side_effect=lambda s, t: (True, False))
+    mocker.patch('freqtrade.main.get_signal',
+                 side_effect=lambda s, t: (True, False))
     msg_mock = MagicMock()
     mocker.patch('freqtrade.main.rpc.send_msg', MagicMock())
     mocker.patch.multiple('freqtrade.rpc.telegram',

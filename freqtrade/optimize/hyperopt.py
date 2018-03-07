@@ -81,7 +81,8 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['rsi'] = ta.RSI(dataframe)
     # Inverse Fisher transform on RSI, values [-1.0, 1.0] (https://goo.gl/2JGGoy)
     rsi = 0.1 * (dataframe['rsi'] - 50)
-    dataframe['fisher_rsi'] = (numpy.exp(2 * rsi) - 1) / (numpy.exp(2 * rsi) + 1)
+    dataframe['fisher_rsi'] = (
+        numpy.exp(2 * rsi) - 1) / (numpy.exp(2 * rsi) + 1)
     # Inverse Fisher transform on RSI normalized, value [0.0, 100.0] (https://goo.gl/2JGGoy)
     dataframe['fisher_rsi_norma'] = 50 * (dataframe['fisher_rsi'] + 1)
     # Stoch
@@ -97,7 +98,8 @@ def populate_indicators(dataframe: DataFrame) -> DataFrame:
     dataframe['fastd_rsi'] = stoch_rsi['fastd']
     dataframe['fastk_rsi'] = stoch_rsi['fastk']
     # Bollinger bands
-    bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
+    bollinger = qtpylib.bollinger_bands(
+        qtpylib.typical_price(dataframe), window=20, stds=2)
     dataframe['bb_lowerband'] = bollinger['lower']
     dataframe['bb_middleband'] = bollinger['mid']
     dataframe['bb_upperband'] = bollinger['upper']
@@ -219,7 +221,8 @@ def log_results(results):
 
 def calculate_loss(total_profit: float, trade_count: int, trade_duration: float):
     """ objective function, returns smaller number for more optimal results """
-    trade_loss = 1 - 0.25 * exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
+    trade_loss = 1 - 0.25 * \
+        exp(-(trade_count - TARGET_TRADES) ** 2 / 10 ** 5.8)
     profit_loss = max(0, 1 - total_profit / EXPECTED_MAX_PROFIT)
     duration_loss = 0.4 * min(trade_duration / MAX_ACCEPTED_TRADE_DURATION, 1)
     return trade_loss + profit_loss + duration_loss
@@ -462,7 +465,7 @@ def format_results(results: DataFrame):
                 results.profit_BTC.sum(),
                 results.profit_percent.sum(),
                 results.duration.mean(),
-            )
+    )
 
 
 def start(args):
@@ -502,10 +505,12 @@ def start(args):
 
     if args.mongodb:
         logger.info('Using mongodb ...')
-        logger.info('Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!')
+        logger.info(
+            'Start scripts/start-mongodb.sh and start-hyperopt-worker.sh manually!')
 
         db_name = 'freqtrade_hyperopt'
-        TRIALS = MongoTrials('mongo://127.0.0.1:1234/{}/jobs'.format(db_name), exp_key='exp1')
+        TRIALS = MongoTrials(
+            'mongo://127.0.0.1:1234/{}/jobs'.format(db_name), exp_key='exp1')
     else:
         logger.info('Preparing Trials..')
         signal.signal(signal.SIGINT, signal_handler)

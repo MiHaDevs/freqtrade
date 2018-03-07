@@ -48,7 +48,8 @@ def _clean_test_file(file: str) -> None:
 
 def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
     caplog.set_level(logging.INFO)
-    mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
+    mocker.patch('freqtrade.optimize.get_ticker_history',
+                 return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -57,13 +58,15 @@ def test_load_data_30min_ticker(default_conf, ticker_history, mocker, caplog):
     _backup_file(file, copy_file=True)
     optimize.load_data(None, pairs=['BTC_UNITTEST'], ticker_interval=30)
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "BTC_ETH", Interval: 30 min', caplog.record_tuples)
+    assert not log_has(
+        'Download the pair: "BTC_ETH", Interval: 30 min', caplog.record_tuples)
     _clean_test_file(file)
 
 
 def test_load_data_5min_ticker(default_conf, ticker_history, mocker, caplog):
     caplog.set_level(logging.INFO)
-    mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
+    mocker.patch('freqtrade.optimize.get_ticker_history',
+                 return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -72,13 +75,15 @@ def test_load_data_5min_ticker(default_conf, ticker_history, mocker, caplog):
     _backup_file(file, copy_file=True)
     optimize.load_data(None, pairs=['BTC_ETH'], ticker_interval=5)
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "BTC_ETH", Interval: 5 min', caplog.record_tuples)
+    assert not log_has(
+        'Download the pair: "BTC_ETH", Interval: 5 min', caplog.record_tuples)
     _clean_test_file(file)
 
 
 def test_load_data_1min_ticker(default_conf, ticker_history, mocker, caplog):
     caplog.set_level(logging.INFO)
-    mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
+    mocker.patch('freqtrade.optimize.get_ticker_history',
+                 return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -87,13 +92,15 @@ def test_load_data_1min_ticker(default_conf, ticker_history, mocker, caplog):
     _backup_file(file, copy_file=True)
     optimize.load_data(None, ticker_interval=1, pairs=['BTC_ETH'])
     assert os.path.isfile(file) is True
-    assert not log_has('Download the pair: "BTC_ETH", Interval: 1 min', caplog.record_tuples)
+    assert not log_has(
+        'Download the pair: "BTC_ETH", Interval: 1 min', caplog.record_tuples)
     _clean_test_file(file)
 
 
 def test_load_data_with_new_pair_1min(default_conf, ticker_history, mocker, caplog):
     caplog.set_level(logging.INFO)
-    mocker.patch('freqtrade.optimize.get_ticker_history', return_value=ticker_history)
+    mocker.patch('freqtrade.optimize.get_ticker_history',
+                 return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
 
     exchange._API = Bittrex({'key': '', 'secret': ''})
@@ -102,16 +109,19 @@ def test_load_data_with_new_pair_1min(default_conf, ticker_history, mocker, capl
     _backup_file(file)
     optimize.load_data(None, ticker_interval=1, pairs=['BTC_MEME'])
     assert os.path.isfile(file) is True
-    assert log_has('Download the pair: "BTC_MEME", Interval: 1 min', caplog.record_tuples)
+    assert log_has(
+        'Download the pair: "BTC_MEME", Interval: 1 min', caplog.record_tuples)
     _clean_test_file(file)
 
 
 def test_testdata_path():
-    assert os.path.join('freqtrade', 'tests', 'testdata') in make_testdata_path(None)
+    assert os.path.join('freqtrade', 'tests',
+                        'testdata') in make_testdata_path(None)
 
 
 def test_download_pairs(default_conf, ticker_history, mocker):
-    mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
+    mocker.patch('freqtrade.optimize.__init__.get_ticker_history',
+                 return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
@@ -128,7 +138,8 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     assert os.path.isfile(file1_1) is False
     assert os.path.isfile(file2_1) is False
 
-    assert download_pairs(None, pairs=['BTC-MEME', 'BTC-CFI'], ticker_interval=1) is True
+    assert download_pairs(
+        None, pairs=['BTC-MEME', 'BTC-CFI'], ticker_interval=1) is True
 
     assert os.path.isfile(file1_1) is True
     assert os.path.isfile(file2_1) is True
@@ -140,7 +151,8 @@ def test_download_pairs(default_conf, ticker_history, mocker):
     assert os.path.isfile(file1_5) is False
     assert os.path.isfile(file2_5) is False
 
-    assert download_pairs(None, pairs=['BTC-MEME', 'BTC-CFI'], ticker_interval=5) is True
+    assert download_pairs(
+        None, pairs=['BTC-MEME', 'BTC-CFI'], ticker_interval=5) is True
 
     assert os.path.isfile(file1_5) is True
     assert os.path.isfile(file2_5) is True
@@ -152,7 +164,8 @@ def test_download_pairs(default_conf, ticker_history, mocker):
 
 def test_download_pairs_exception(default_conf, ticker_history, mocker, caplog):
     caplog.set_level(logging.INFO)
-    mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
+    mocker.patch('freqtrade.optimize.__init__.get_ticker_history',
+                 return_value=ticker_history)
     mocker.patch('freqtrade.optimize.__init__.download_backtesting_testdata',
                  side_effect=BaseException('File Error'))
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
@@ -167,11 +180,13 @@ def test_download_pairs_exception(default_conf, ticker_history, mocker, caplog):
     # clean files freshly downloaded
     _clean_test_file(file1_1)
     _clean_test_file(file1_5)
-    assert log_has('Failed to download the pair: "BTC-MEME", Interval: 1 min', caplog.record_tuples)
+    assert log_has(
+        'Failed to download the pair: "BTC-MEME", Interval: 1 min', caplog.record_tuples)
 
 
 def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
-    mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=ticker_history)
+    mocker.patch('freqtrade.optimize.__init__.get_ticker_history',
+                 return_value=ticker_history)
     mocker.patch.dict('freqtrade.main._CONF', default_conf)
     exchange._API = Bittrex({'key': '', 'secret': ''})
 
@@ -194,7 +209,8 @@ def test_download_backtesting_testdata(default_conf, ticker_history, mocker):
 def test_download_backtesting_testdata2(mocker):
     tick = [{'T': 'bar'}, {'T': 'foo'}]
     mocker.patch('freqtrade.misc.file_dump_json', return_value=None)
-    mocker.patch('freqtrade.optimize.__init__.get_ticker_history', return_value=tick)
+    mocker.patch('freqtrade.optimize.__init__.get_ticker_history',
+                 return_value=tick)
     assert download_backtesting_testdata(None, pair="BTC-UNITEST", interval=1)
     assert download_backtesting_testdata(None, pair="BTC-UNITEST", interval=3)
 
@@ -212,7 +228,8 @@ def test_load_tickerdata_file():
 
 def test_init(default_conf, mocker):
     conf = {'exchange': {'pair_whitelist': []}}
-    mocker.patch('freqtrade.optimize.hyperopt_optimize_conf', return_value=conf)
+    mocker.patch('freqtrade.optimize.hyperopt_optimize_conf',
+                 return_value=conf)
     assert {} == optimize.load_data('', pairs=[], refresh_pairs=True,
                                     ticker_interval=int(default_conf['ticker_interval']))
 
@@ -237,7 +254,8 @@ def test_trim_tickerlist():
     ticker_len = len(ticker)
 
     assert ticker_list_len == ticker_len + 5
-    assert ticker_list[0] is not ticker[0]  # The first element should be different
+    # The first element should be different
+    assert ticker_list[0] is not ticker[0]
     assert ticker_list[-1] is ticker[-1]  # The last element must be the same
 
     # Test the pattern ^(\d+)-$
@@ -248,7 +266,8 @@ def test_trim_tickerlist():
 
     assert ticker_len == 5
     assert ticker_list[0] is ticker[0]  # The first element must be the same
-    assert ticker_list[-1] is not ticker[-1]  # The last element should be different
+    # The last element should be different
+    assert ticker_list[-1] is not ticker[-1]
 
     # Test the pattern ^(\d+)-(\d+)$
     # This pattern extract a window
@@ -257,9 +276,11 @@ def test_trim_tickerlist():
     ticker_len = len(ticker)
 
     assert ticker_len == 5
-    assert ticker_list[0] is not ticker[0]  # The first element should be different
+    # The first element should be different
+    assert ticker_list[0] is not ticker[0]
     assert ticker_list[5] is ticker[0]  # The list starts at the index 5
-    assert ticker_list[9] is ticker[-1]  # The list ends at the index 9 (5 elements)
+    # The list ends at the index 9 (5 elements)
+    assert ticker_list[9] is ticker[-1]
 
     # Test a wrong pattern
     # This pattern must return the list unchanged
@@ -271,7 +292,8 @@ def test_trim_tickerlist():
 
 
 def test_file_dump_json():
-    file = 'freqtrade/tests/testdata/test_{id}.json'.format(id=str(uuid.uuid4()))
+    file = 'freqtrade/tests/testdata/test_{id}.json'.format(
+        id=str(uuid.uuid4()))
     data = {'bar': 'foo'}
 
     # check the file we will create does not exist

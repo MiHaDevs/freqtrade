@@ -106,10 +106,12 @@ class DefaultStrategy(IStrategy):
         # Because ta.BBANDS implementation is broken with small numbers, it actually
         # returns middle band for all the three bands. Switch to qtpylib.bollinger_bands
         # and use middle band instead.
-        dataframe['blower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
+        dataframe['blower'] = ta.BBANDS(
+            dataframe, nbdevup=2, nbdevdn=2)['lowerband']
 
         # Bollinger bands
-        bollinger = qtpylib.bollinger_bands(dataframe['close'], window=20, stds=2)
+        bollinger = qtpylib.bollinger_bands(
+            dataframe['close'], window=20, stds=2)
         dataframe['bb_lowerband'] = bollinger['lower']
         dataframe['bb_middleband'] = bollinger['mid']
         dataframe['bb_upperband'] = bollinger['upper']
@@ -208,9 +210,8 @@ class DefaultStrategy(IStrategy):
         dataframe.loc[
             (
                 (dataframe['fastd'] > 10)
-            ) ,
+            ),
             'buy'] = 1
-
 
         return dataframe
 

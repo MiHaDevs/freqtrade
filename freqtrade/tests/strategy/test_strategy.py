@@ -5,18 +5,24 @@ from freqtrade.strategy.strategy import Strategy
 
 
 def test_sanitize_module_name():
-    assert Strategy._sanitize_module_name('default_strategy') == 'default_strategy'
-    assert Strategy._sanitize_module_name('default_strategy.py') == 'default_strategy'
-    assert Strategy._sanitize_module_name('../default_strategy.py') == 'default_strategy'
-    assert Strategy._sanitize_module_name('../default_strategy') == 'default_strategy'
-    assert Strategy._sanitize_module_name('.default_strategy') == '.default_strategy'
+    assert Strategy._sanitize_module_name(
+        'default_strategy') == 'default_strategy'
+    assert Strategy._sanitize_module_name(
+        'default_strategy.py') == 'default_strategy'
+    assert Strategy._sanitize_module_name(
+        '../default_strategy.py') == 'default_strategy'
+    assert Strategy._sanitize_module_name(
+        '../default_strategy') == 'default_strategy'
+    assert Strategy._sanitize_module_name(
+        '.default_strategy') == '.default_strategy'
     assert Strategy._sanitize_module_name('foo-bar') == 'foo-bar'
     assert Strategy._sanitize_module_name('foo/bar') == 'bar'
 
 
 def test_search_strategy():
     assert Strategy._search_strategy('default_strategy') == '.'
-    assert Strategy._search_strategy('test_strategy') == 'user_data.strategies.'
+    assert Strategy._search_strategy(
+        'test_strategy') == 'user_data.strategies.'
     assert Strategy._search_strategy('super_duper') is None
 
 
@@ -48,7 +54,8 @@ def test_load_not_found_strategy(caplog):
     strategy._load_strategy('NotFoundStrategy')
 
     error_msg = "Impossible to load Strategy 'user_data/strategies/{}.py'. This file does not " \
-                "exist or contains Python code errors".format('NotFoundStrategy')
+                "exist or contains Python code errors".format(
+                    'NotFoundStrategy')
     assert ('test_strategy', logging.ERROR, error_msg) in caplog.record_tuples
 
 
@@ -66,11 +73,13 @@ def test_strategy(result):
     assert 'adx' in strategy.populate_indicators(result)
 
     assert hasattr(strategy.custom_strategy, 'populate_buy_trend')
-    dataframe = strategy.populate_buy_trend(strategy.populate_indicators(result))
+    dataframe = strategy.populate_buy_trend(
+        strategy.populate_indicators(result))
     assert 'buy' in dataframe.columns
 
     assert hasattr(strategy.custom_strategy, 'populate_sell_trend')
-    dataframe = strategy.populate_sell_trend(strategy.populate_indicators(result))
+    dataframe = strategy.populate_sell_trend(
+        strategy.populate_indicators(result))
     assert 'sell' in dataframe.columns
 
 

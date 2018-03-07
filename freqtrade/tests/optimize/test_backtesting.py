@@ -140,7 +140,8 @@ def test_backtest_1min_ticker_interval(default_strategy, default_conf, mocker):
 
 def load_data_test(what):
     timerange = ((None, 'line'), None, -100)
-    data = optimize.load_data(None, ticker_interval=1, pairs=['BTC_UNITEST'], timerange=timerange)
+    data = optimize.load_data(None, ticker_interval=1, pairs=[
+                              'BTC_UNITEST'], timerange=timerange)
     pair = data['BTC_UNITEST']
     datalen = len(pair)
     # Depending on the what parameter we now adjust the
@@ -297,7 +298,8 @@ def test_backtest_pricecontours(default_conf, mocker, default_strategy):
 
 
 def mocked_load_data(datadir, pairs=[], ticker_interval=0, refresh_pairs=False, timerange=None):
-    tickerdata = optimize.load_tickerdata_file(datadir, 'BTC_UNITEST', 1, timerange=timerange)
+    tickerdata = optimize.load_tickerdata_file(
+        datadir, 'BTC_UNITEST', 1, timerange=timerange)
     pairdata = {'BTC_UNITEST': tickerdata}
     return pairdata
 
