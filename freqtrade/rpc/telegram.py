@@ -216,11 +216,11 @@ def _callback(bot, update):
             InlineKeyboardButton("Edit Pair {}".format("Whitelist" if get_list_type()==ListType.STATIC else "Blacklist") , callback_data= "edit_pairs"),
         ], "Select your action", 1, query)
     elif callback_data == 'edit_max_open_trades':
-        send_msg("Okay, give me new value for max open trades.\nCurrent value for max open trades is <b>{}</b>.".format(_CONF['max_open_trades']), parse_mode=ParseMode.HTML)
+        send_msg("Okay, give me new value for max open trades.\nCurrent value for max open trades is <b>{}</b>".format(_CONF['max_open_trades']), parse_mode=ParseMode.HTML)
         _CONVERSATION = Conversation.MAX_OPEN_TRADES
         return MESSAGE_HANDLER
     elif callback_data == 'edit_stake_amount':
-        send_msg("Okay, give me new value for stake amount.\nCurrent value for stake amount is <b>{}</b>.".format(_CONF['stake_amount']), parse_mode=ParseMode.HTML)
+        send_msg("Okay, give me new value for stake amount.\nCurrent value for stake amount is <b>{}</b>".format(_CONF['stake_amount']), parse_mode=ParseMode.HTML)
         _CONVERSATION = Conversation.STAKE_AMOUNT
         return MESSAGE_HANDLER
     elif callback_data == 'edit_pairs':
@@ -250,11 +250,19 @@ def _send_coins_for_deletion(bot:Bot,message:str,query = None):
 def _message_handler(bot: Bot, update: Update):
     global _CONVERSATION
     if _CONVERSATION == Conversation.MAX_OPEN_TRADES:
-        new_max_open_trades = int(update.message.text)
+        try: 
+            new_max_open_trades = int(update.message.text)
+        except ValueError:
+            send_msg("I don't understand that. Please ensure that you are entering a valid number")
+            return
         _CONF['max_open_trades'] = new_max_open_trades
         _process_config_update()
     elif _CONVERSATION == Conversation.STAKE_AMOUNT:
-        new_stake_amount = float(update.message.text)
+        try: 
+            new_stake_amount = float(update.message.text)
+        except ValueError:
+            send_msg("I don't understand that. Please ensure that you are entering a valid amount")
+            return
         _CONF['stake_amount'] = new_stake_amount
         _process_config_update()
     elif _CONVERSATION == Conversation.UPDATE_COINS:
