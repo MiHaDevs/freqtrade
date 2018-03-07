@@ -233,8 +233,11 @@ def _callback(bot, update):
     elif "x_" in callback_data:
         coin = callback_data.split("_",1)[1]
         logger.info("Callback : {} and coin : {}".format(callback_data,coin))
-        _UPDATED_COINS.remove(coin)
-        _send_coins_for_deletion(bot, "✔ Removed coin.\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n", query)
+        if coin in _UPDATED_COINS:
+            _UPDATED_COINS.remove(coin)
+            _send_coins_for_deletion(bot, "✔ Removed {} from {}.\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n".format(coin.upper(), "Whitelist" if get_list_type()==ListType.STATIC else "Blacklist"), query)
+        else:
+            send_msg("{} has already been removed from the list".format(coin.upper()))
 
 def _send_coins_for_deletion(bot:Bot,message:str,query = None):
     global _CONVERSATION
@@ -267,13 +270,17 @@ def _message_handler(bot: Bot, update: Update):
             _UPDATED_COINS.clear()
         else:
             coin = user_text.upper()
-            try:
-                exchange.validate_pairs(["{}_{}".format(_CONF['stake_currency'],coin)])
-            except OperationalException as e:
-                _send_coins_for_deletion(bot, "✖ Failure! {}\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n".format(e))
-                return
-            _UPDATED_COINS.append(coin)
-            _send_coins_for_deletion(bot, "✔ Added coin.\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n")
+            list_name = "Whitelist" if get_list_type()==ListType.STATIC else "Blacklist";
+            if coin in _UPDATED_COINS:
+                send_msg("{} is already added to {}".format(coin, list_name))
+            else:
+                try:
+                    exchange.validate_pairs(["{}_{}".format(_CONF['stake_currency'],coin)])
+                except OperationalException as e:
+                    _send_coins_for_deletion(bot, "✖ Failure! {}\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n".format(e))
+                    return
+                _UPDATED_COINS.append(coin)
+                _send_coins_for_deletion(bot, "✔ Added {} to {}.\n\n∙ Tap on coin to remove from the list.\n∙ Send coin to add to the list.\n∙ Type and send 'Done' when you are finished to save your changes.\n".format(coin.upper(),list_name))
 
 def _process_config_update():
     global _CONVERSATION
