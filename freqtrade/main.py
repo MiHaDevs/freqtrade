@@ -496,10 +496,10 @@ def load_config_from_path(path: str):
 
 def enable_dry_run():
     if _CONF.get('dry_run', False):
-            _CONF.update({'dry_run_db': True})
-            logger.info(
-                'Dry_run will use the DB file: "tradesv3.dry_run.sqlite". (--dry_run_db detected)'
-            )
+        _CONF.update({'dry_run_db': True})
+        logger.info(
+            'Dry_run will use the DB file: "tradesv3.dry_run.sqlite". (--dry_run_db detected)'
+        )
     else:
         logger.info('Dry run is disabled. (--dry_run_db ignored)')
 

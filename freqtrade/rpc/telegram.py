@@ -202,13 +202,22 @@ def _send_inline_keyboard_markup(bot: Bot,
                               reply_markup=reply_markup)
 
 
+def request_input(key: str, title: str):
+    global _CONVERSATION
+    send_msg("Okay, give me new value for {}.\n"
+             "Current value for {} is <b>{}</b>"
+             .format(title, title, _CONF[key]), parse_mode=ParseMode.HTML)
+    _CONVERSATION = Conversation.MAX_OPEN_TRADES
+    return MESSAGE_HANDLER
+
+
 def _callback(bot, update):
     """
     Handle callbacks for inline keyboard button taps/clicks
     """
     query = update.callback_query
     callback_data = format(query.data)
-    global _CONVERSATION, _UPDATED_COINS
+    global _UPDATED_COINS
     if callback_data == 'view_config':
         # Collect editable config data and send it across in tabular format
         (error, df_pairs) = rpc_config(_CONF)
@@ -243,17 +252,9 @@ def _callback(bot, update):
             ) == ListType.STATIC else "Blacklist"), callback_data="edit_pairs"),
         ], "Select your action", 1, query)
     elif callback_data == 'edit_max_open_trades':
-        send_msg("Okay, give me new value for max open trades.\n"
-                 "Current value for max open trades is <b>{}</b>"
-                 .format(_CONF['max_open_trades']), parse_mode=ParseMode.HTML)
-        _CONVERSATION = Conversation.MAX_OPEN_TRADES
-        return MESSAGE_HANDLER
+        return request_input('max_open_trades', 'max open trades')
     elif callback_data == 'edit_stake_amount':
-        send_msg("Okay, give me new value for stake amount.\n"
-                 "Current value for stake amount is <b>{}</b>"
-                 .format(_CONF['stake_amount']), parse_mode=ParseMode.HTML)
-        _CONVERSATION = Conversation.STAKE_AMOUNT
-        return MESSAGE_HANDLER
+        return request_input('stake_amount', 'stake amount')
     elif callback_data == 'edit_pairs':
         # Prompt user to choose whether to delete or add new coins
         list_to_scan = _CONF['exchange']['pair_whitelist'] if get_list_type(
