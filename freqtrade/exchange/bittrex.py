@@ -50,7 +50,8 @@ class Bittrex(Exchange):
         temp_error_messages = [
             'NO_API_RESPONSE',
             'MIN_TRADE_REQUIREMENT_NOT_MET',
-            'INSUFFICIENT_FUNDS'
+            'INSUFFICIENT_FUNDS',
+            'INVALID_API_KEY'
         ]
         if response['message'] in temp_error_messages:
             raise ContentDecodingError(response['message'])

@@ -202,12 +202,12 @@ def _send_inline_keyboard_markup(bot: Bot,
                               reply_markup=reply_markup)
 
 
-def request_input(key: str, title: str):
+def request_input(key: str, title: str, conv: Conversation):
     global _CONVERSATION
     send_msg("Okay, give me new value for {}.\n"
              "Current value for {} is <b>{}</b>"
              .format(title, title, _CONF[key]), parse_mode=ParseMode.HTML)
-    _CONVERSATION = Conversation.MAX_OPEN_TRADES
+    _CONVERSATION = conv
     return MESSAGE_HANDLER
 
 
@@ -252,9 +252,9 @@ def _callback(bot, update):
             ) == ListType.STATIC else "Blacklist"), callback_data="edit_pairs"),
         ], "Select your action", 1, query)
     elif callback_data == 'edit_max_open_trades':
-        return request_input('max_open_trades', 'max open trades')
+        return request_input('max_open_trades', 'max open trades', Conversation.MAX_OPEN_TRADES)
     elif callback_data == 'edit_stake_amount':
-        return request_input('stake_amount', 'stake amount')
+        return request_input('stake_amount', 'stake amount', Conversation.STAKE_AMOUNT)
     elif callback_data == 'edit_pairs':
         # Prompt user to choose whether to delete or add new coins
         list_to_scan = _CONF['exchange']['pair_whitelist'] if get_list_type(
